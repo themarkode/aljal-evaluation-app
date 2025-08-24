@@ -1,0 +1,71 @@
+name: aljal_evaluation
+description: "Real Estate Evaluation App with Arabic Word Document Generation"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Core UI
+  cupertino_icons: ^1.0.8
+  
+  # Firebase
+  firebase_core: ^3.14.0
+  cloud_firestore: ^5.6.9
+  firebase_storage: ^12.4.7
+  
+  # State Management
+  flutter_riverpod: ^2.6.1
+  
+  # Image Handling
+  image_picker: ^1.1.2
+  
+  # Document Generation (NEW APPROACH - XML based)
+  archive: ^3.6.1          # For ZIP/DOCX handling
+  xml: ^6.5.0              # For XML parsing and manipulation
+  
+  # Utilities
+  intl: ^0.20.2            # Date formatting
+  path_provider: ^2.1.4    # File system access
+  permission_handler: ^11.3.1  # File permissions
+  open_file: ^3.5.6        # Open generated documents
+  
+  # UI Enhancement
+  flutter_svg: ^2.2.0
+  
+  # Cloud Firestore ODM (if you're using it)
+  cloud_firestore_odm: ^1.0.0-dev.88
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.5.4
+  cloud_firestore_odm_generator: ^1.0.0-dev.90
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/fonts/
+    - assets/word_template/template.docx
+  
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-VariableFont_opsz,wght.ttf
+        - asset: assets/fonts/Inter-Italic-VariableFont_opsz,wght.ttf
+          style: italic
+    # Arabic font support - commented out until you add the files
+    # - family: NotoSansArabic
+    #   fonts:
+    #     - asset: assets/fonts/NotoSansArabic-Regular.ttf
+    #     - asset: assets/fonts/NotoSansArabic-Bold.ttf
+    #       weight: 700

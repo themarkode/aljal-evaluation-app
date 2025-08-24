@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1019706732410",
+    "project_id": "aljal-evaluation-app",
+    "storage_bucket": "aljal-evaluation-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1019706732410:android:bf75168a95d7ba57a830c3",
+        "android_client_info": {
+          "package_name": "com.example.aljal_evaluation"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHicQK4VIum2VERJR5vty8t9U0fj3tSco"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
