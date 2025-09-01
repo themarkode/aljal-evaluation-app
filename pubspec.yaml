@@ -24,11 +24,13 @@ dependencies:
   
   # Image Handling
   image_picker: ^1.1.2
+  image: ^4.0.17
   
   # Document Generation (NEW APPROACH - XML based)
   archive: ^3.6.1          # For ZIP/DOCX handling
-  xml: ^6.5.0              # For XML parsing and manipulation
-  
+  xml: ^6.3.0              # For XML parsing and manipulation
+  http: ^1.1.0             # For HTTP requests
+
   # Utilities
   intl: ^0.20.2            # Date formatting
   path_provider: ^2.1.4    # File system access

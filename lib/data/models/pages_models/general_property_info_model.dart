@@ -5,15 +5,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class GeneralPropertyInfoModel {
   // ✅ Word fields (green dots – will be mapped to Word document)
 
-  final String governorate; // اسم المحافظة
-  final String area; // اسم المنطقة
-  final String plotNumber; // رقم القطعة
-  final String parcelNumber; // رقم القسيمة
-  final String planNumber; // رقم المخطط
-  final String documentNumber; // رقم الوثيقة
-  final DateTime documentDate; // تاريخ الوثيقة
-  final double areaSize; // المساحة م²
-  final String propertyType; // نوع العقار
+  final String? governorate; // اسم المحافظة
+  final String? area; // اسم المنطقة
+  final String? plotNumber; // رقم القطعة
+  final String? parcelNumber; // رقم القسيمة
+  final String? planNumber; // رقم المخطط
+  final String? documentNumber; // رقم الوثيقة
+  final DateTime? documentDate; // تاريخ الوثيقة
+  final double? areaSize; // المساحة م²
+  final String? propertyType; // نوع العقار
 
   // 🟡 Internal fields (not mapped to Word)
 
@@ -26,15 +26,15 @@ class GeneralPropertyInfoModel {
   final String? landShape; // شكل وتضاريس الأرض
 
   GeneralPropertyInfoModel({
-    required this.governorate,
-    required this.area,
-    required this.plotNumber,
-    required this.parcelNumber,
-    required this.planNumber,
-    required this.documentNumber,
-    required this.documentDate,
-    required this.areaSize,
-    required this.propertyType,
+    this.governorate,
+    this.area,
+    this.plotNumber,
+    this.parcelNumber,
+    this.planNumber,
+    this.documentNumber,
+    this.documentDate,
+    this.areaSize,
+    this.propertyType,
     this.autoNumber,
     this.houseNumber,
     this.streetCount,
@@ -46,15 +46,17 @@ class GeneralPropertyInfoModel {
 
   factory GeneralPropertyInfoModel.fromJson(Map<String, dynamic> json) {
     return GeneralPropertyInfoModel(
-      governorate: json['governorate'] ?? '',
-      area: json['area'] ?? '',
-      plotNumber: json['plotNumber'] ?? '',
-      parcelNumber: json['parcelNumber'] ?? '',
-      planNumber: json['planNumber'] ?? '',
-      documentNumber: json['documentNumber'] ?? '',
-      documentDate: (json['documentDate'] as Timestamp).toDate(),
-      areaSize: (json['areaSize'] ?? 0).toDouble(),
-      propertyType: json['propertyType'] ?? '',
+      governorate: json['governorate'],
+      area: json['area'],
+      plotNumber: json['plotNumber'],
+      parcelNumber: json['parcelNumber'],
+      planNumber: json['planNumber'],
+      documentNumber: json['documentNumber'],
+      documentDate: json['documentDate'] != null
+          ? (json['documentDate'] as Timestamp).toDate()
+          : null,
+      areaSize: json['areaSize']?.toDouble(),
+      propertyType: json['propertyType'],
       autoNumber: json['autoNumber'],
       houseNumber: json['houseNumber'],
       streetCount: json['streetCount'],
@@ -73,7 +75,8 @@ class GeneralPropertyInfoModel {
       'parcelNumber': parcelNumber,
       'planNumber': planNumber,
       'documentNumber': documentNumber,
-      'documentDate': Timestamp.fromDate(documentDate),
+      'documentDate':
+          documentDate != null ? Timestamp.fromDate(documentDate!) : null,
       'areaSize': areaSize,
       'propertyType': propertyType,
       'autoNumber': autoNumber,
