@@ -24,6 +24,7 @@ dependencies:
   
   # Image Handling
   image_picker: ^1.1.2
+  image: ^4.0.17
   
   # Document Generation (NEW APPROACH - XML based)
   archive: ^3.6.1          # For ZIP/DOCX handling
