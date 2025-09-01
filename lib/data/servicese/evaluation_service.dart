@@ -1,0 +1,152 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/evaluation_model.dart';
+
+class EvaluationService {
+ final _collection = FirebaseFirestore.instance.collection('evaluations');
+
+ // Create new evaluation
+ Future<String> createEvaluation(EvaluationModel evaluation) async {
+   try {
+     // Generate new document ID
+     DocumentReference docRef = _collection.doc();
+     
+     // Add the ID to the evaluation
+     EvaluationModel evaluationWithId = EvaluationModel(
+       evaluationId: docRef.id,
+       createdAt: DateTime.now(),
+       updatedAt: DateTime.now(),
+       status: evaluation.status ?? 'draft',
+       generalInfo: evaluation.generalInfo,
+       generalPropertyInfo: evaluation.generalPropertyInfo,
+       propertyDescription: evaluation.propertyDescription,
+       floorsCount: evaluation.floorsCount,
+       floors: evaluation.floors,
+       areaDetails: evaluation.areaDetails,
+       incomeNotes: evaluation.incomeNotes,
+       sitePlans: evaluation.sitePlans,
+       propertyImages: evaluation.propertyImages,
+       additionalData: evaluation.additionalData,
+     );
+
+     await docRef.set(evaluationWithId.toJson());
+     return docRef.id;
+   } catch (e) {
+     throw Exception('Failed to create evaluation: $e');
+   }
+ }
+
+ // Update existing evaluation
+ Future<void> updateEvaluation(EvaluationModel evaluation) async {
+   try {
+     if (evaluation.evaluationId == null) {
+       throw Exception('Evaluation ID is required for update');
+     }
+
+     // Update with new timestamp
+     EvaluationModel updatedEvaluation = EvaluationModel(
+       evaluationId: evaluation.evaluationId,
+       createdAt: evaluation.createdAt,
+       updatedAt: DateTime.now(),
+       status: evaluation.status,
+       generalInfo: evaluation.generalInfo,
+       generalPropertyInfo: evaluation.generalPropertyInfo,
+       propertyDescription: evaluation.propertyDescription,
+       floorsCount: evaluation.floorsCount,
+       floors: evaluation.floors,
+       areaDetails: evaluation.areaDetails,
+       incomeNotes: evaluation.incomeNotes,
+       sitePlans: evaluation.sitePlans,
+       propertyImages: evaluation.propertyImages,
+       additionalData: evaluation.additionalData,
+     );
+
+     await _collection
+         .doc(evaluation.evaluationId)
+         .set(updatedEvaluation.toJson());
+   } catch (e) {
+     throw Exception('Failed to update evaluation: $e');
+   }
+ }
+
+ // Get evaluation by ID
+ Future<EvaluationModel?> getEvaluationById(String evaluationId) async {
+   try {
+     DocumentSnapshot doc = await _collection
+         .doc(evaluationId)
+         .get();
+
+     if (!doc.exists) return null;
+
+     return EvaluationModel.fromJson(doc.data() as Map<String, dynamic>);
+   } catch (e) {
+     throw Exception('Failed to get evaluation: $e');
+   }
+ }
+
+ // Get all evaluations with pagination
+ Future<List<EvaluationModel>> getAllEvaluations({
+   int limit = 10,
+   DocumentSnapshot? startAfter,
+ }) async {
+   try {
+     Query query = _collection
+         .orderBy('updatedAt', descending: true)
+         .limit(limit);
+
+     if (startAfter != null) {
+       query = query.startAfterDocument(startAfter);
+     }
+
+     QuerySnapshot querySnapshot = await query.get();
+
+     return querySnapshot.docs
+         .map((doc) => EvaluationModel.fromJson(doc.data() as Map<String, dynamic>))
+         .toList();
+   } catch (e) {
+     throw Exception('Failed to get evaluations: $e');
+   }
+ }
+
+ // Search evaluations by date range
+ Future<List<EvaluationModel>> searchEvaluationsByDateRange({
+   required DateTime startDate,
+   required DateTime endDate,
+   int limit = 10,
+ }) async {
+   try {
+     QuerySnapshot querySnapshot = await _collection
+         .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+         .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+         .orderBy('createdAt', descending: true)
+         .limit(limit)
+         .get();
+
+     return querySnapshot.docs
+         .map((doc) => EvaluationModel.fromJson(doc.data() as Map<String, dynamic>))
+         .toList();
+   } catch (e) {
+     throw Exception('Failed to search evaluations: $e');
+   }
+ }
+
+ // Delete evaluation
+ Future<void> deleteEvaluation(String evaluationId) async {
+   try {
+     await _collection.doc(evaluationId).delete();
+   } catch (e) {
+     throw Exception('Failed to delete evaluation: $e');
+   }
+ }
+
+ // Get evaluations count
+ Future<int> getEvaluationsCount() async {
+   try {
+     AggregateQuerySnapshot snapshot = await _collection
+         .count()
+         .get();
+     return snapshot.count ?? 0;
+   } catch (e) {
+     throw Exception('Failed to get evaluations count: $e');
+   }
+ }
+}
