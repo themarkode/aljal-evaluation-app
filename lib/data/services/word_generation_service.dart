@@ -11,41 +11,42 @@ class WordGenerationService {
   Future<File> generateWordDocument(EvaluationModel evaluation) async {
     try {
       // Load template from assets
-      ByteData templateData = await rootBundle.load('assets/word_template/template.docx');
+      ByteData templateData =
+          await rootBundle.load('assets/word_template/template.docx');
       List<int> templateBytes = templateData.buffer.asUint8List();
-      
+
       // Extract ZIP archive
       Archive archive = ZipDecoder().decodeBytes(templateBytes);
-      
+
       // Find and modify document.xml
       ArchiveFile? documentXml = _findFile(archive, 'word/document.xml');
       if (documentXml == null) {
         throw Exception('Could not find document.xml in template');
       }
-      
+
       // Parse XML
       String xmlContent = String.fromCharCodes(documentXml.content);
       XmlDocument xmlDoc = XmlDocument.parse(xmlContent);
-      
+
       // Replace all content types
       _replaceTextFields(xmlDoc, evaluation);
       _replaceRepeatingSection(xmlDoc, evaluation);
       await _replaceImages(xmlDoc, evaluation, archive);
       _replaceHyperlinks(xmlDoc, evaluation);
-      
+
       // Convert back to string
       String modifiedXml = xmlDoc.toXmlString(pretty: false);
-      
+
       // Create new archive with images
       Archive newArchive = await _createModifiedArchive(archive, modifiedXml);
-      
+
       // Save file
       List<int> newDocxBytes = ZipEncoder().encode(newArchive)!;
       Directory appDir = await getApplicationDocumentsDirectory();
       String fileName = _generateFileName(evaluation);
       File outputFile = File('${appDir.path}/$fileName');
       await outputFile.writeAsBytes(newDocxBytes);
-      
+
       return outputFile;
     } catch (e) {
       throw Exception('Failed to generate Word document: $e');
@@ -60,11 +61,11 @@ class WordGenerationService {
           .firstOrNull
           ?.findElements('w:tag')
           .firstOrNull;
-      
+
       if (tagElement != null) {
         String? tagValue = tagElement.getAttribute('w:val');
         String? replacementText = _getReplacementText(tagValue, evaluation);
-        
+
         if (replacementText != null) {
           _replaceContentControlText(element, replacementText);
         }
@@ -73,7 +74,8 @@ class WordGenerationService {
   }
 
   // Replace repeating section for floors table
-  void _replaceRepeatingSection(XmlDocument xmlDoc, EvaluationModel evaluation) {
+  void _replaceRepeatingSection(
+      XmlDocument xmlDoc, EvaluationModel evaluation) {
     if (evaluation.floors == null || evaluation.floors!.isEmpty) return;
 
     for (XmlElement element in xmlDoc.findAllElements('w:sdt')) {
@@ -82,9 +84,9 @@ class WordGenerationService {
           .firstOrNull
           ?.findElements('w:tag')
           .firstOrNull;
-      
+
       String? tagValue = tagElement?.getAttribute('w:val');
-      
+
       if (tagValue == 'جدول_الأدوار') {
         _generateFloorRows(element, evaluation.floors!);
       }
@@ -92,22 +94,25 @@ class WordGenerationService {
   }
 
   // Generate floor rows for repeating section
-  void _generateFloorRows(XmlElement repeatingSection, List<FloorModel> floors) {
+  void _generateFloorRows(
+      XmlElement repeatingSection, List<FloorModel> floors) {
     // Find the template row within the repeating section
     final rows = repeatingSection.findAllElements('w:tr').toList();
     if (rows.isEmpty) return;
-    
+
     XmlElement templateRow = rows.first;
-    
+
     // Find the parent table by looking for w:tbl element
     XmlElement? parentTable;
-    for (XmlElement ancestor in repeatingSection.ancestors) {
-      if (ancestor.name.local == 'tbl') {
+
+    // Fix: Change XmlElement to XmlNode and add type check
+    for (XmlNode ancestor in repeatingSection.ancestors) {
+      if (ancestor is XmlElement && ancestor.name.local == 'tbl') {
         parentTable = ancestor;
         break;
       }
     }
-    
+
     if (parentTable == null) {
       // If no table found in ancestors, look for it as a child
       final tables = repeatingSection.findAllElements('w:tbl').toList();
@@ -115,7 +120,7 @@ class WordGenerationService {
         parentTable = tables.first;
       }
     }
-    
+
     if (parentTable == null) return;
 
     // Remove the template row
@@ -124,7 +129,7 @@ class WordGenerationService {
     // Create new rows for each floor
     for (FloorModel floor in floors) {
       XmlElement newRow = templateRow.copy();
-      
+
       // Find content controls within this row and replace them
       for (XmlElement sdt in newRow.findAllElements('w:sdt')) {
         XmlElement? rowTagElement = sdt
@@ -132,33 +137,39 @@ class WordGenerationService {
             .firstOrNull
             ?.findElements('w:tag')
             .firstOrNull;
-        
+
         String? rowTagValue = rowTagElement?.getAttribute('w:val');
-        
+
         if (rowTagValue == 'رقم_الدور') {
           _replaceContentControlText(sdt, floor.floorName ?? '');
         } else if (rowTagValue == 'تفاصيل_الدور') {
           _replaceContentControlText(sdt, floor.floorDetails ?? '');
         }
       }
-      
+
       parentTable.children.add(newRow);
     }
   }
 
   // Replace images with actual image data
-  Future<void> _replaceImages(XmlDocument xmlDoc, EvaluationModel evaluation, Archive archive) async {
+  Future<void> _replaceImages(
+      XmlDocument xmlDoc, EvaluationModel evaluation, Archive archive) async {
     if (evaluation.propertyImages == null) return;
-    
+
     Map<String, String?> imageMapping = {
-      'صور_لموقع_العقار_حسب_المخطط_العام_لبلدية_الكويت': evaluation.propertyImages!.propertyLocationMapImageUrl,
+      'صور_لموقع_العقار_حسب_المخطط_العام_لبلدية_الكويت':
+          evaluation.propertyImages!.propertyLocationMapImageUrl,
       'صورة_للعقار': evaluation.propertyImages!.propertyImageUrl,
-      '1_صور_مختلفة_للعقار': evaluation.propertyImages!.propertyVariousImages1Url,
-      '2_صور_مختلفة_للعقار': evaluation.propertyImages!.propertyVariousImages2Url,
-      'صورة_لموقع_العقار_من_القمر_الصناعي': evaluation.propertyImages!.satelliteLocationImageUrl,
-      'صور_لموقع_القطعة_المدنية_حسب_المخطط_العام_لبلدية_الكويت': evaluation.propertyImages!.civilPlotMapImageUrl,
+      '1_صور_مختلفة_للعقار':
+          evaluation.propertyImages!.propertyVariousImages1Url,
+      '2_صور_مختلفة_للعقار':
+          evaluation.propertyImages!.propertyVariousImages2Url,
+      'صورة_لموقع_العقار_من_القمر_الصناعي':
+          evaluation.propertyImages!.satelliteLocationImageUrl,
+      'صور_لموقع_القطعة_المدنية_حسب_المخطط_العام_لبلدية_الكويت':
+          evaluation.propertyImages!.civilPlotMapImageUrl,
     };
-    
+
     for (String tagName in imageMapping.keys) {
       String? imageUrl = imageMapping[tagName];
       if (imageUrl != null && imageUrl.isNotEmpty) {
@@ -167,25 +178,27 @@ class WordGenerationService {
     }
   }
 
-  // Replace hyperlinks 
+  // Replace hyperlinks
   void _replaceHyperlinks(XmlDocument xmlDoc, EvaluationModel evaluation) {
     if (evaluation.propertyImages?.locationAddressText != null) {
       String addressText = evaluation.propertyImages!.locationAddressText!;
-      String addressLink = evaluation.propertyImages?.locationAddressLink ?? '#';
-      
+      String addressLink =
+          evaluation.propertyImages?.locationAddressLink ?? '#';
+
       _createHyperlink(xmlDoc, 'موقع_العقار', addressText, addressLink);
     }
   }
 
   // Insert image into content control
-  Future<void> _insertImageIntoContentControl(XmlDocument xmlDoc, String tagName, String imageUrl) async {
+  Future<void> _insertImageIntoContentControl(
+      XmlDocument xmlDoc, String tagName, String imageUrl) async {
     try {
       // Download image
       http.Response response = await http.get(Uri.parse(imageUrl));
       if (response.statusCode != 200) return;
 
       List<int> imageBytes = response.bodyBytes;
-      
+
       // Find the picture content control
       for (XmlElement element in xmlDoc.findAllElements('w:sdt')) {
         XmlElement? tagElement = element
@@ -193,7 +206,7 @@ class WordGenerationService {
             .firstOrNull
             ?.findElements('w:tag')
             .firstOrNull;
-        
+
         if (tagElement?.getAttribute('w:val') == tagName) {
           // This is simplified - full implementation requires:
           // 1. Adding image to archive
@@ -210,14 +223,15 @@ class WordGenerationService {
   }
 
   // Create hyperlink
-  void _createHyperlink(XmlDocument xmlDoc, String tagName, String text, String url) {
+  void _createHyperlink(
+      XmlDocument xmlDoc, String tagName, String text, String url) {
     for (XmlElement element in xmlDoc.findAllElements('w:sdt')) {
       XmlElement? tagElement = element
           .findElements('w:sdtPr')
           .firstOrNull
           ?.findElements('w:tag')
           .firstOrNull;
-      
+
       if (tagElement?.getAttribute('w:val') == tagName) {
         // Simplified hyperlink creation
         _replaceContentControlText(element, '$text ($url)');
@@ -227,7 +241,7 @@ class WordGenerationService {
 
   String? _getReplacementText(String? tagValue, EvaluationModel evaluation) {
     if (tagValue == null) return null;
-    
+
     switch (tagValue) {
       // General Info - معلومات عامة
       case 'اسم_الجهة_الطالبة_للتقييم':
@@ -248,7 +262,7 @@ class WordGenerationService {
         return _formatDate(evaluation.generalInfo?.issueDate);
       case 'تاريخ_الكشف':
         return _formatDate(evaluation.generalInfo?.inspectionDate);
-        
+
       // General Property Info - معلومات عامة للعقار
       case 'اسم_المحافظة':
         return evaluation.generalPropertyInfo?.governorate;
@@ -282,7 +296,7 @@ class WordGenerationService {
         return evaluation.generalPropertyInfo?.landFacing;
       case 'شكل_وتضاريس_الأرض':
         return evaluation.generalPropertyInfo?.landShape;
-        
+
       // Property Description - وصف العقار
       case 'حالة_العقار':
         return evaluation.propertyDescription?.propertyCondition;
@@ -308,11 +322,11 @@ class WordGenerationService {
         return evaluation.propertyDescription?.exteriorFacades;
       case 'ملاحظات_الصيانة':
         return evaluation.propertyDescription?.maintenanceNotes;
-        
+
       // Floors - الوصف العام للعقار
       case 'عدد_الأدوار':
         return evaluation.floorsCount?.toString();
-        
+
       // Area Details - تفاصيل المنطقة المحيطة بالعقار
       case 'الشوارع_والبنية_التحتية':
         return evaluation.areaDetails?.streetsAndInfrastructure;
@@ -328,7 +342,7 @@ class WordGenerationService {
         return evaluation.areaDetails?.neighboringTenantTypes;
       case 'معدلات_الشواغر_بالمنطقة':
         return evaluation.areaDetails?.areaVacancyRates;
-        
+
       // Income Notes - ملاحظات الدخل
       case 'نوع_المستأجرين':
         return evaluation.incomeNotes?.tenantType;
@@ -344,7 +358,7 @@ class WordGenerationService {
         return evaluation.incomeNotes?.vacancyRate?.toString();
       case 'التأكد_من_القيمة_الإيجارية_للوحدات':
         return evaluation.incomeNotes?.rentalValueVerification;
-        
+
       // Site Plans - المخطط ورفع القياس بالموقع
       case 'ملاحظات_عامة':
         return evaluation.sitePlans?.generalNotes;
@@ -354,7 +368,7 @@ class WordGenerationService {
         return evaluation.sitePlans?.siteMeasurementNumbers;
       case 'ملاحظات_المخالفات':
         return evaluation.sitePlans?.violationNotes;
-        
+
       // Additional Data - بيانات إضافية
       case 'الغرض_من_التقييم':
         return evaluation.additionalData?.evaluationPurpose;
@@ -368,7 +382,7 @@ class WordGenerationService {
         return evaluation.additionalData?.totalValue?.toString();
       case 'تاريخ_إصدار_التقييم_النهائي':
         return _formatDate(evaluation.additionalData?.evaluationIssueDate);
-        
+
       default:
         return null;
     }
@@ -394,9 +408,10 @@ class WordGenerationService {
     return null;
   }
 
-  Future<Archive> _createModifiedArchive(Archive originalArchive, String modifiedXml) async {
+  Future<Archive> _createModifiedArchive(
+      Archive originalArchive, String modifiedXml) async {
     Archive newArchive = Archive();
-    
+
     for (ArchiveFile file in originalArchive) {
       if (file.name == 'word/document.xml') {
         newArchive.addFile(ArchiveFile(
@@ -408,7 +423,7 @@ class WordGenerationService {
         newArchive.addFile(file);
       }
     }
-    
+
     return newArchive;
   }
 
@@ -416,13 +431,14 @@ class WordGenerationService {
     // Format: area_plotNumber_parcelNumber.docx
     String area = evaluation.generalPropertyInfo?.area ?? 'منطقة';
     String plotNumber = evaluation.generalPropertyInfo?.plotNumber ?? 'قطعة';
-    String parcelNumber = evaluation.generalPropertyInfo?.parcelNumber ?? 'قسيمة';
-    
+    String parcelNumber =
+        evaluation.generalPropertyInfo?.parcelNumber ?? 'قسيمة';
+
     // Clean filename (remove special characters)
     area = area.replaceAll(RegExp(r'[^\w\u0600-\u06FF]'), '_');
     plotNumber = plotNumber.replaceAll(RegExp(r'[^\w\u0600-\u06FF]'), '_');
     parcelNumber = parcelNumber.replaceAll(RegExp(r'[^\w\u0600-\u06FF]'), '_');
-    
-    return '${area}_${plotNumber}_${parcelNumber}.docx';
+
+    return '${area}_${plotNumber}_$parcelNumber.docx';
   }
 }
