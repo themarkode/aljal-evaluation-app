@@ -1,27 +1,29 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'evaluation_provider.dart';
+part of 'form_navigation_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$evaluationNotifierHash() =>
-    r'b4f97e5d63169042c548bc80b6e429530b162676';
+String _$formNavigationNotifierHash() =>
+    r'2a241401d85bebc0c07ff678f2bb92e824dd23e0';
 
-/// See also [EvaluationNotifier].
-@ProviderFor(EvaluationNotifier)
-final evaluationNotifierProvider =
-    AutoDisposeNotifierProvider<EvaluationNotifier, EvaluationModel>.internal(
-  EvaluationNotifier.new,
-  name: r'evaluationNotifierProvider',
+/// See also [FormNavigationNotifier].
+@ProviderFor(FormNavigationNotifier)
+final formNavigationNotifierProvider = AutoDisposeNotifierProvider<
+    FormNavigationNotifier, FormNavigationState>.internal(
+  FormNavigationNotifier.new,
+  name: r'formNavigationNotifierProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$evaluationNotifierHash,
+      : _$formNavigationNotifierHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef _$EvaluationNotifier = AutoDisposeNotifier<EvaluationModel>;
+typedef _$FormNavigationNotifier = AutoDisposeNotifier<FormNavigationState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+
+
