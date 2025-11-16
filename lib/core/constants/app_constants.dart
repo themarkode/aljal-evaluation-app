@@ -3,7 +3,7 @@ class AppConstants {
   AppConstants._();
 
   // ============================================================
-  // APP INFO
+  // APP INFO hi test
   // ============================================================
 
   static const String appName = 'Al-Jal Evaluation';
