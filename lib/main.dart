@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
-
+import 'core/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,11 +24,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Al-Jal Evaluation',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        useMaterial3: true,
-      ),
-      home: const GeneralInfoFormScreen(),
+      theme: AppTheme.lightTheme,
+      home:
+          const Placeholder(), // Temporary - will be replaced with actual screen
     );
   }
 }

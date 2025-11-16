@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdditionalDataModel {
   // ✅ Word fields (green dots - will be mapped to Word document)
-  
+
   final String? evaluationPurpose; // الغرض من التقييم
   final String? buildingSystem; // نظام البناء
   final String? buildingRatio; // النسبة
@@ -28,8 +28,8 @@ class AdditionalDataModel {
       buildingRatio: json['buildingRatio'],
       accordingTo: json['accordingTo'],
       totalValue: json['totalValue']?.toDouble(),
-      evaluationIssueDate: json['evaluationIssueDate'] != null 
-          ? (json['evaluationIssueDate'] as Timestamp).toDate() 
+      evaluationIssueDate: json['evaluationIssueDate'] != null
+          ? (json['evaluationIssueDate'] as Timestamp).toDate()
           : null,
     );
   }
@@ -41,8 +41,8 @@ class AdditionalDataModel {
       'buildingRatio': buildingRatio,
       'accordingTo': accordingTo,
       'totalValue': totalValue,
-      'evaluationIssueDate': evaluationIssueDate != null 
-          ? Timestamp.fromDate(evaluationIssueDate!) 
+      'evaluationIssueDate': evaluationIssueDate != null
+          ? Timestamp.fromDate(evaluationIssueDate!)
           : null,
     };
   }
