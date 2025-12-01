@@ -104,10 +104,16 @@ class EvaluationCard extends StatelessWidget {
 
               AppSpacing.verticalSpaceXS,
 
-              // Property address
-              if (evaluation.generalPropertyInfo?.propertyAddress != null) ...[
+              // Governorate and property type info
+              if (evaluation.generalPropertyInfo?.governorate != null ||
+                  evaluation.generalPropertyInfo?.propertyType != null) ...[
                 Text(
-                  evaluation.generalPropertyInfo!.propertyAddress!,
+                  [
+                    if (evaluation.generalPropertyInfo?.governorate != null)
+                      evaluation.generalPropertyInfo!.governorate!,
+                    if (evaluation.generalPropertyInfo?.propertyType != null)
+                      evaluation.generalPropertyInfo!.propertyType!,
+                  ].join(' - '),
                   style: AppTypography.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -138,10 +144,8 @@ class EvaluationCard extends StatelessWidget {
                         AppSpacing.horizontalSpaceXS,
                         Expanded(
                           child: Text(
-                            evaluation.generalInfo?.evaluationDate != null
-                                ? Formatters.formatDate(
-                                    evaluation.generalInfo!.evaluationDate,
-                                  )
+                            evaluation.updatedAt != null
+                                ? Formatters.formatDate(evaluation.updatedAt)
                                 : '-',
                             style: AppTypography.bodyMedium.copyWith(
                               color: AppColors.textSecondary,
@@ -154,9 +158,8 @@ class EvaluationCard extends StatelessWidget {
                     ),
                   ),
 
-                  // Status indicator (if needed in future)
-                  // For now, just show property type
-                  if (evaluation.generalPropertyInfo?.propertyType != null) ...[
+                  // Plot number badge (if available)
+                  if (evaluation.generalPropertyInfo?.plotNumber != null) ...[
                     AppSpacing.horizontalSpaceSM,
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -168,7 +171,7 @@ class EvaluationCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        evaluation.generalPropertyInfo!.propertyType!,
+                        'قطعة ${evaluation.generalPropertyInfo!.plotNumber}',
                         style: AppTypography.bodyMedium.copyWith(
                           color: AppColors.primary,
                           fontSize: 12,
