@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
-import 'core/theme/app_theme.dart';
+import 'package:aljal_evaluation/core/theme/app_theme.dart';
+import 'package:aljal_evaluation/core/routing/app_router.dart';
+import 'package:aljal_evaluation/core/routing/route_names.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,8 +27,16 @@ class MyApp extends StatelessWidget {
       title: 'Al-Jal Evaluation',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home:
-          const Placeholder(), // Temporary - will be replaced with actual screen
+      
+      // Routing configuration
+      initialRoute: RouteNames.initial,
+      onGenerateRoute: AppRouter.generateRoute,
+      
+      // RTL support for Arabic
+      locale: const Locale('ar', 'KW'),
+      supportedLocales: const [
+        Locale('ar', 'KW'), // Arabic (Kuwait)
+      ],
     );
   }
 }
