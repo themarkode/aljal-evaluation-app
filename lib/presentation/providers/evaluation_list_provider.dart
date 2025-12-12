@@ -15,11 +15,10 @@ class EvaluationListNotifier extends _$EvaluationListNotifier {
   @override
   EvaluationListState build() {
     _evaluationService = EvaluationService();
-    // Load initial evaluations
-    loadEvaluations();
+    // Don't load here - let the screen trigger the load
     return EvaluationListState(
       evaluations: [],
-      isLoading: true,
+      isLoading: false,
       hasMore: true,
       selectedFilter: EvaluationFilter.all,
       searchQuery: '',

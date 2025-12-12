@@ -1,0 +1,11 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow all read/write access to evaluation_images folder
+    // This is for internal company app - adjust security later if needed
+    match /evaluation_images/{evaluationId}/{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}
+

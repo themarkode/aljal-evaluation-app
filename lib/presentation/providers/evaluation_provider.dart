@@ -14,7 +14,9 @@ import 'package:aljal_evaluation/data/services/evaluation_service.dart';
 part 'evaluation_provider.g.dart';
 
 // This is the main state class for managing evaluation form data
-@riverpod
+// keepAlive: true prevents the provider from being disposed when navigating between screens
+// This is critical for multi-step forms where data needs to persist across screen transitions
+@Riverpod(keepAlive: true)
 class EvaluationNotifier extends _$EvaluationNotifier {
   late final EvaluationService _evaluationService;
   
@@ -31,6 +33,10 @@ class EvaluationNotifier extends _$EvaluationNotifier {
   
   // Update general info (Step 1)
   void updateGeneralInfo(GeneralInfoModel generalInfo) {
+    print('📝 Provider: Updating generalInfo...');
+    print('   - clientName: ${generalInfo.clientName}');
+    print('   - Previous state evaluationId: ${state.evaluationId}');
+    
     state = EvaluationModel(
       evaluationId: state.evaluationId,
       status: state.status,
@@ -47,6 +53,8 @@ class EvaluationNotifier extends _$EvaluationNotifier {
       propertyImages: state.propertyImages,
       additionalData: state.additionalData,
     );
+    
+    print('✅ Provider: Updated state - generalInfo is null: ${state.generalInfo == null}');
   }
   
   // Update general property info (Step 1.1)
@@ -227,9 +235,18 @@ class EvaluationNotifier extends _$EvaluationNotifier {
   // Save evaluation to Firebase
   Future<String?> saveEvaluation() async {
     try {
+      print('💾 Provider: Saving evaluation...');
+      print('   - Current evaluationId: ${state.evaluationId}');
+      print('   - Has generalInfo: ${state.generalInfo != null}');
+      if (state.generalInfo != null) {
+        print('   - generalInfo clientName: ${state.generalInfo?.clientName}');
+      }
+      
       if (state.evaluationId == null) {
         // Create new evaluation
+        print('   - Creating NEW evaluation');
         final id = await _evaluationService.createEvaluation(state);
+        print('   - Created with ID: $id');
         state = EvaluationModel(
           evaluationId: id,
           status: state.status,
@@ -249,10 +266,12 @@ class EvaluationNotifier extends _$EvaluationNotifier {
         return id;
       } else {
         // Update existing evaluation
+        print('   - Updating EXISTING evaluation: ${state.evaluationId}');
         await _evaluationService.updateEvaluation(state);
         return state.evaluationId;
       }
     } catch (e) {
+      print('❌ Provider: Error saving evaluation: $e');
       throw Exception('Failed to save evaluation: $e');
     }
   }
@@ -260,11 +279,30 @@ class EvaluationNotifier extends _$EvaluationNotifier {
   // Load evaluation from Firebase
   Future<void> loadEvaluation(String evaluationId) async {
     try {
+      print('🔄 Provider: Loading evaluation $evaluationId');
       final evaluation = await _evaluationService.getEvaluationById(evaluationId);
       if (evaluation != null) {
+        print('✅ Provider: Got evaluation from service');
+        print('   - Evaluation ID: ${evaluation.evaluationId}');
+        print('   - Has generalInfo: ${evaluation.generalInfo != null}');
+        if (evaluation.generalInfo != null) {
+          print('   - Client name: ${evaluation.generalInfo?.clientName}');
+          print('   - Requestor name: ${evaluation.generalInfo?.requestorName}');
+        }
+        
+        // Update state
         state = evaluation;
+        
+        // Verify state was updated
+        print('✅ Provider: State updated');
+        print('   - State evaluationId: ${state.evaluationId}');
+        print('   - State has generalInfo: ${state.generalInfo != null}');
+      } else {
+        print('❌ Provider: Evaluation not found');
+        throw Exception('Evaluation not found with ID: $evaluationId');
       }
     } catch (e) {
+      print('❌ Provider: Error loading evaluation: $e');
       throw Exception('Failed to load evaluation: $e');
     }
   }

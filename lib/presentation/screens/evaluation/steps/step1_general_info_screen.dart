@@ -57,28 +57,90 @@ class _Step1GeneralInfoScreenState
     _siteManagerPhoneController = TextEditingController();
 
     // Load existing data if editing
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadExistingData();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _loadEvaluation();
     });
+  }
+
+  Future<void> _loadEvaluation() async {
+    // If editing an existing evaluation, load it from Firebase
+    if (widget.evaluationId != null) {
+      print('🔄 Loading evaluation: ${widget.evaluationId}');
+      try {
+        // Always load fresh data when editing
+        await ref
+            .read(evaluationNotifierProvider.notifier)
+            .loadEvaluation(widget.evaluationId!);
+        
+        // Read the state immediately after loading
+        final loadedEvaluation = ref.read(evaluationNotifierProvider);
+        print('📦 Evaluation loaded - ID: ${loadedEvaluation.evaluationId}');
+        print('   - Has generalInfo: ${loadedEvaluation.generalInfo != null}');
+        
+        // Wait a bit to ensure state is updated
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        // Load data into form fields after evaluation is loaded
+        if (mounted) {
+          _loadExistingData();
+        }
+      } catch (e) {
+        print('❌ Error in _loadEvaluation: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('فشل تحميل البيانات: $e'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+    } else {
+      // For new evaluation, just load existing data (might be empty)
+      _loadExistingData();
+    }
   }
 
   void _loadExistingData() {
     final evaluation = ref.read(evaluationNotifierProvider);
     final generalInfo = evaluation.generalInfo;
 
-    if (generalInfo != null) {
-      _requestorNameController.text = generalInfo.requestorName ?? '';
-      _clientNameController.text = generalInfo.clientName ?? '';
-      _ownerNameController.text = generalInfo.ownerName ?? '';
-      _clientPhoneController.text = generalInfo.clientPhone ?? '';
-      _guardPhoneController.text = generalInfo.guardPhone ?? '';
-      _siteManagerPhoneController.text = generalInfo.siteManagerPhone ?? '';
+    print('📝 Loading existing data...');
+    print('   - Evaluation ID: ${evaluation.evaluationId}');
+    print('   - Widget evaluationId: ${widget.evaluationId}');
+    print('   - generalInfo is null: ${generalInfo == null}');
 
+    if (generalInfo != null) {
+      print('✅ Found generalInfo, populating fields...');
+      print('   - Client name: ${generalInfo.clientName}');
+      print('   - Requestor name: ${generalInfo.requestorName}');
+      
       setState(() {
+        _requestorNameController.text = generalInfo.requestorName ?? '';
+        _clientNameController.text = generalInfo.clientName ?? '';
+        _ownerNameController.text = generalInfo.ownerName ?? '';
+        _clientPhoneController.text = generalInfo.clientPhone ?? '';
+        _guardPhoneController.text = generalInfo.guardPhone ?? '';
+        _siteManagerPhoneController.text = generalInfo.siteManagerPhone ?? '';
         _requestDate = generalInfo.requestDate;
         _issueDate = generalInfo.issueDate;
         _inspectionDate = generalInfo.inspectionDate;
       });
+      
+      print('✅ Fields populated successfully');
+    } else if (widget.evaluationId != null) {
+      // If we have an evaluationId but no generalInfo, show a message
+      print('⚠️ No generalInfo found for evaluation ${widget.evaluationId}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('لا توجد بيانات في هذا التقييم'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -120,6 +182,10 @@ class _Step1GeneralInfoScreenState
             : _siteManagerPhoneController.text.trim(),
       );
 
+      print('📝 Step1: Saving generalInfo...');
+      print('   - clientName: ${generalInfo.clientName}');
+      print('   - requestorName: ${generalInfo.requestorName}');
+
       // Update state
       ref
           .read(evaluationNotifierProvider.notifier)
@@ -143,6 +209,23 @@ class _Step1GeneralInfoScreenState
 
   @override
   Widget build(BuildContext context) {
+    // Watch the evaluation provider to reactively update form when data loads
+    final evaluation = ref.watch(evaluationNotifierProvider);
+    
+    // If we're editing and evaluation just loaded, update the form
+    if (widget.evaluationId != null && 
+        evaluation.evaluationId == widget.evaluationId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && evaluation.generalInfo != null) {
+          // Only update if fields are empty (to avoid overwriting user input)
+          if (_clientNameController.text.isEmpty && 
+              _requestorNameController.text.isEmpty) {
+            _loadExistingData();
+          }
+        }
+      });
+    }
+    
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(

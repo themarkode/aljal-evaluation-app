@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   
   # Core UI
   cupertino_icons: ^1.0.8
@@ -37,6 +39,7 @@ dependencies:
   path_provider: ^2.1.4    # File system access
   permission_handler: ^11.3.1  # File permissions
   open_file: ^3.5.6        # Open generated documents
+  share_plus: ^10.1.4      # Share files to other apps
   
   # UI Enhancement
   flutter_svg: ^2.2.0

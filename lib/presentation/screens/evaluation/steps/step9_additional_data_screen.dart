@@ -86,45 +86,94 @@ class _Step9AdditionalDataScreenState
     super.dispose();
   }
 
-  void _saveAndComplete() {
+  Future<void> _saveAndComplete() async {
     if (_formKey.currentState?.validate() ?? false) {
-      // Create AdditionalDataModel
-      final additionalData = AdditionalDataModel(
-        evaluationPurpose: _evaluationPurposeController.text.trim().isEmpty
-            ? null
-            : _evaluationPurposeController.text.trim(),
-        buildingSystem: _buildingSystemController.text.trim().isEmpty
-            ? null
-            : _buildingSystemController.text.trim(),
-        buildingRatio: _buildingRatioController.text.trim().isEmpty
-            ? null
-            : _buildingRatioController.text.trim(),
-        accordingTo: _accordingToController.text.trim().isEmpty
-            ? null
-            : _accordingToController.text.trim(),
-        totalValue: _totalValueController.text.trim().isEmpty
-            ? null
-            : double.tryParse(_totalValueController.text.trim()),
-        evaluationIssueDate: _evaluationIssueDate,
-      );
+      try {
+        // Show loading indicator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
 
-      // Update state
-      ref
-          .read(evaluationNotifierProvider.notifier)
-          .updateAdditionalData(additionalData);
+        // Create AdditionalDataModel
+        final additionalData = AdditionalDataModel(
+          evaluationPurpose: _evaluationPurposeController.text.trim().isEmpty
+              ? null
+              : _evaluationPurposeController.text.trim(),
+          buildingSystem: _buildingSystemController.text.trim().isEmpty
+              ? null
+              : _buildingSystemController.text.trim(),
+          buildingRatio: _buildingRatioController.text.trim().isEmpty
+              ? null
+              : _buildingRatioController.text.trim(),
+          accordingTo: _accordingToController.text.trim().isEmpty
+              ? null
+              : _accordingToController.text.trim(),
+          totalValue: _totalValueController.text.trim().isEmpty
+              ? null
+              : double.tryParse(_totalValueController.text.trim()),
+          evaluationIssueDate: _evaluationIssueDate,
+        );
 
-      // TODO: Navigate to evaluation list or show completion dialog
-      // For now, show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تم حفظ النموذج بنجاح'),
-          duration: Duration(seconds: 2),
-          backgroundColor: Colors.green,
-        ),
-      );
+        // Update state with additional data
+        ref
+            .read(evaluationNotifierProvider.notifier)
+            .updateAdditionalData(additionalData);
 
-      // Navigate back to evaluation list (you'll implement this later)
-      // Navigator.pushReplacementNamed(context, RouteNames.evaluationList);
+        // Update status to completed
+        ref.read(evaluationNotifierProvider.notifier).updateStatus('completed');
+
+        // Save evaluation to Firebase
+        await ref.read(evaluationNotifierProvider.notifier).saveEvaluation();
+
+        // Close loading dialog
+        if (mounted) {
+          Navigator.pop(context);
+        }
+
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم حفظ النموذج بنجاح'),
+              duration: Duration(seconds: 2),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        // Navigate back to evaluation list and clear form state
+        if (mounted) {
+          // Reset evaluation state for next form
+          ref.read(evaluationNotifierProvider.notifier).resetEvaluation();
+
+          // Navigate to evaluation list
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            RouteNames.evaluationList,
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        // Close loading dialog
+        if (mounted) {
+          Navigator.pop(context);
+        }
+
+        // Show error message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('فشل حفظ النموذج: $e'),
+              duration: const Duration(seconds: 3),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 

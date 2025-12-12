@@ -2,6 +2,19 @@ import 'package:flutter/material.dart';
 import 'route_names.dart';
 import 'route_arguments.dart';
 
+// Import screens
+import 'package:aljal_evaluation/presentation/screens/evaluation/evaluation_list_screen.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step1_general_info_screen.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step2_general_property_info_screen.dart';
+// TODO: Import Step3PropertyDescriptionScreen once it's created with correct class name
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step4_floors_screen.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step5_area_details_screen.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step6_income_notes_screen.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step7_site_plans_screen.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step8_property_images_screen.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step9_additional_data_screen.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/view_evaluation_screen.dart';
+
 /// App router - handles all route generation
 class AppRouter {
   AppRouter._();
@@ -15,24 +28,26 @@ class AppRouter {
       // ========================================
       // MAIN ROUTES
       // ========================================
-      
+
       case RouteNames.initial:
       case RouteNames.evaluationList:
         return _buildRoute(
-          const Placeholder(), // TODO: Replace with EvaluationListScreen
+          const EvaluationListScreen(),
           settings: settings,
         );
 
       case RouteNames.newEvaluation:
+        // New evaluation starts at step 1
         return _buildRoute(
-          const Placeholder(), // TODO: Replace with NewEvaluationScreen
+          Step1GeneralInfoScreen(evaluationId: null),
           settings: settings,
         );
 
       case RouteNames.editEvaluation:
         if (arguments is EvaluationArguments) {
+          // Edit evaluation starts at step 1
           return _buildRoute(
-            const Placeholder(), // TODO: Replace with EditEvaluationScreen
+            Step1GeneralInfoScreen(evaluationId: arguments.evaluationId),
             settings: settings,
           );
         }
@@ -41,7 +56,7 @@ class AppRouter {
       case RouteNames.viewEvaluation:
         if (arguments is EvaluationArguments) {
           return _buildRoute(
-            const Placeholder(), // TODO: Replace with ViewEvaluationScreen
+            ViewEvaluationScreen(evaluationId: arguments.evaluationId),
             settings: settings,
           );
         }
@@ -129,15 +144,50 @@ class AppRouter {
     required Object? arguments,
     required RouteSettings settings,
   }) {
-    // Create default arguments if not provided
+    // Extract evaluation ID from arguments
     final formArgs = arguments is FormStepArguments
         ? arguments
         : FormStepArguments.forStep(step: step);
 
-    return _buildRoute(
-      const Placeholder(), // TODO: Replace with FormStepScreen
-      settings: settings,
-    );
+    final evaluationId = formArgs.evaluationId;
+
+    // Return appropriate step screen
+    Widget screen;
+    switch (step) {
+      case 1:
+        screen = Step1GeneralInfoScreen(evaluationId: evaluationId);
+        break;
+      case 2:
+        screen = Step2GeneralPropertyInfoScreen(evaluationId: evaluationId);
+        break;
+      case 3:
+        // TODO: Step3 file currently has wrong class name - routing to Step 4 temporarily
+        // Once Step3PropertyDescriptionScreen is created, replace this
+        screen = Step4FloorsScreen(evaluationId: evaluationId);
+        break;
+      case 4:
+        screen = Step4FloorsScreen(evaluationId: evaluationId);
+        break;
+      case 5:
+        screen = Step5AreaDetailsScreen(evaluationId: evaluationId);
+        break;
+      case 6:
+        screen = Step6IncomeNotesScreen(evaluationId: evaluationId);
+        break;
+      case 7:
+        screen = Step7SitePlansScreen(evaluationId: evaluationId);
+        break;
+      case 8:
+        screen = Step8PropertyImagesScreen(evaluationId: evaluationId);
+        break;
+      case 9:
+        screen = Step9AdditionalDataScreen(evaluationId: evaluationId);
+        break;
+      default:
+        screen = Step1GeneralInfoScreen(evaluationId: evaluationId);
+    }
+
+    return _buildRoute(screen, settings: settings);
   }
 
   /// Build standard material page route
@@ -154,9 +204,10 @@ class AppRouter {
   /// Build error route
   static Route<dynamic> _errorRoute(RouteSettings settings) {
     return MaterialPageRoute(
-      builder: (_) => Scaffold(
+      builder: (context) => Scaffold(
         appBar: AppBar(
           title: const Text('خطأ'),
+          backgroundColor: Colors.red,
         ),
         body: Center(
           child: Column(
@@ -170,7 +221,7 @@ class AppRouter {
               const SizedBox(height: 16),
               const Text(
                 'الصفحة غير موجودة',
-                style: TextStyle(fontSize: 20),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
@@ -183,8 +234,10 @@ class AppRouter {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
-                  // Navigate back or to home
-                  Navigator.of(_).pushReplacementNamed(RouteNames.initial);
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    RouteNames.initial,
+                    (route) => false,
+                  );
                 },
                 child: const Text('العودة للرئيسية'),
               ),

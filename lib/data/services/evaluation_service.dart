@@ -7,6 +7,12 @@ class EvaluationService {
   // Create new evaluation
   Future<String> createEvaluation(EvaluationModel evaluation) async {
     try {
+      print('📤 Service: Creating evaluation...');
+      print('   - Has generalInfo: ${evaluation.generalInfo != null}');
+      if (evaluation.generalInfo != null) {
+        print('   - clientName: ${evaluation.generalInfo?.clientName}');
+      }
+      
       // Generate new document ID
       DocumentReference docRef = _collection.doc();
 
@@ -28,9 +34,16 @@ class EvaluationService {
         additionalData: evaluation.additionalData,
       );
 
-      await docRef.set(evaluationWithId.toJson());
+      final jsonData = evaluationWithId.toJson();
+      print('📄 Service: JSON data to save:');
+      print('   - Keys: ${jsonData.keys.toList()}');
+      print('   - generalInfo: ${jsonData['generalInfo']}');
+      
+      await docRef.set(jsonData);
+      print('✅ Service: Created evaluation with ID: ${docRef.id}');
       return docRef.id;
     } catch (e) {
+      print('❌ Service: Error creating evaluation: $e');
       throw Exception('Failed to create evaluation: $e');
     }
   }
@@ -71,12 +84,35 @@ class EvaluationService {
   // Get evaluation by ID
   Future<EvaluationModel?> getEvaluationById(String evaluationId) async {
     try {
+      print('📥 Service: Getting evaluation by ID: $evaluationId');
       DocumentSnapshot doc = await _collection.doc(evaluationId).get();
 
-      if (!doc.exists) return null;
+      if (!doc.exists) {
+        print('❌ Service: Document does not exist!');
+        return null;
+      }
 
-      return EvaluationModel.fromJson(doc.data() as Map<String, dynamic>);
+      final data = doc.data() as Map<String, dynamic>;
+      print('📄 Service: Raw data from Firestore:');
+      print('   - Keys: ${data.keys.toList()}');
+      print('   - Has generalInfo: ${data.containsKey('generalInfo')}');
+      if (data.containsKey('generalInfo') && data['generalInfo'] != null) {
+        print('   - generalInfo keys: ${(data['generalInfo'] as Map).keys.toList()}');
+        print('   - clientName: ${data['generalInfo']['clientName']}');
+      }
+      
+      // Ensure evaluationId is set from document ID
+      data['evaluationId'] = doc.id;
+      
+      final model = EvaluationModel.fromJson(data);
+      print('✅ Service: Parsed model - generalInfo is null: ${model.generalInfo == null}');
+      if (model.generalInfo != null) {
+        print('   - Model clientName: ${model.generalInfo?.clientName}');
+      }
+      
+      return model;
     } catch (e) {
+      print('❌ Service: Error getting evaluation: $e');
       throw Exception('Failed to get evaluation: $e');
     }
   }
@@ -96,10 +132,12 @@ class EvaluationService {
 
       QuerySnapshot querySnapshot = await query.get();
 
-      return querySnapshot.docs
-          .map((doc) =>
-              EvaluationModel.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        // Ensure evaluationId is set from document ID
+        data['evaluationId'] = doc.id;
+        return EvaluationModel.fromJson(data);
+      }).toList();
     } catch (e) {
       throw Exception('Failed to get evaluations: $e');
     }
@@ -120,10 +158,12 @@ class EvaluationService {
           .limit(limit)
           .get();
 
-      return querySnapshot.docs
-          .map((doc) =>
-              EvaluationModel.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        // Ensure evaluationId is set from document ID
+        data['evaluationId'] = doc.id;
+        return EvaluationModel.fromJson(data);
+      }).toList();
     } catch (e) {
       throw Exception('Failed to search evaluations: $e');
     }
@@ -163,10 +203,12 @@ class EvaluationService {
           .limit(20)
           .get();
 
-      return querySnapshot.docs
-          .map((doc) =>
-              EvaluationModel.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        // Ensure evaluationId is set from document ID
+        data['evaluationId'] = doc.id;
+        return EvaluationModel.fromJson(data);
+      }).toList();
     } catch (e) {
       throw Exception('Failed to search by client name: $e');
     }
@@ -190,10 +232,12 @@ class EvaluationService {
 
       QuerySnapshot querySnapshot = await query.get();
 
-      return querySnapshot.docs
-          .map((doc) =>
-              EvaluationModel.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        // Ensure evaluationId is set from document ID
+        data['evaluationId'] = doc.id;
+        return EvaluationModel.fromJson(data);
+      }).toList();
     } catch (e) {
       throw Exception('Failed to get evaluations by status: $e');
     }

@@ -105,25 +105,124 @@ class _Step8PropertyImagesScreenState
     super.dispose();
   }
 
-  Future<void> _pickAndUploadImage({
+  // Show image source selection dialog
+  Future<void> _showImageSourceDialog({
     required String imageType,
     required Function(String) onUploadComplete,
     required Function(bool) setUploading,
     required Function(double) setProgress,
   }) async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'اختر مصدر الصورة',
+                style: AppTypography.heading.copyWith(fontSize: 18),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.camera_alt, color: AppColors.primary),
+                ),
+                title: const Text('التقاط صورة بالكاميرا'),
+                subtitle: const Text('استخدم الكاميرا لالتقاط صورة جديدة'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadImage(
+                    imageType: imageType,
+                    onUploadComplete: onUploadComplete,
+                    setUploading: setUploading,
+                    setProgress: setProgress,
+                    source: ImageSource.camera,
+                  );
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.photo_library, color: AppColors.success),
+                ),
+                title: const Text('اختيار من المعرض'),
+                subtitle: const Text('اختر صورة من معرض الصور'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadImage(
+                    imageType: imageType,
+                    onUploadComplete: onUploadComplete,
+                    setUploading: setUploading,
+                    setProgress: setProgress,
+                    source: ImageSource.gallery,
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'إلغاء',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadImage({
+    required String imageType,
+    required Function(String) onUploadComplete,
+    required Function(bool) setUploading,
+    required Function(double) setProgress,
+    required ImageSource source,
+  }) async {
     try {
-      // Pick image
-      final XFile? pickedFile =
-          await _imagePicker.pickImage(source: ImageSource.gallery);
+      // Pick image from specified source
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: source,
+        imageQuality: 85, // Compress slightly for camera images
+        maxWidth: 1920,   // Limit size for camera images
+        maxHeight: 1920,
+      );
 
       if (pickedFile == null) return;
 
       setUploading(true);
       setProgress(0.0);
 
-      // Get evaluation ID
+      // Get evaluation ID - ensure it exists or create one
       final evaluation = ref.read(evaluationNotifierProvider);
-      final evaluationId = evaluation.evaluationId ?? DateTime.now().toString();
+      String? evaluationId = evaluation.evaluationId;
+      
+      // If no evaluation ID exists, save the evaluation first to get a proper ID
+      if (evaluationId == null || evaluationId.isEmpty) {
+        try {
+          final savedId = await ref.read(evaluationNotifierProvider.notifier).saveEvaluation();
+          evaluationId = savedId ?? 'temp_${DateTime.now().millisecondsSinceEpoch}';
+        } catch (e) {
+          // If save fails, use temporary ID (timestamp in milliseconds - no spaces)
+          evaluationId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+        }
+      }
 
       // Upload to Firebase Storage
       String downloadUrl = await _imageService.uploadImage(
@@ -259,7 +358,7 @@ class _Step8PropertyImagesScreenState
                             imageUrl: _propertyLocationMapImageUrl,
                             isUploading: _isUploadingPropertyLocationMap,
                             uploadProgress: _progressPropertyLocationMap,
-                            onPickImage: () => _pickAndUploadImage(
+                            onPickImage: () => _showImageSourceDialog(
                               imageType: 'property_location_map',
                               onUploadComplete: (url) =>
                                   _propertyLocationMapImageUrl = url,
@@ -275,7 +374,7 @@ class _Step8PropertyImagesScreenState
                             imageUrl: _propertyImageUrl,
                             isUploading: _isUploadingPropertyImage,
                             uploadProgress: _progressPropertyImage,
-                            onPickImage: () => _pickAndUploadImage(
+                            onPickImage: () => _showImageSourceDialog(
                               imageType: 'property_image',
                               onUploadComplete: (url) =>
                                   _propertyImageUrl = url,
@@ -301,7 +400,7 @@ class _Step8PropertyImagesScreenState
                             imageUrl: _propertyVariousImages1Url,
                             isUploading: _isUploadingPropertyVariousImages1,
                             uploadProgress: _progressPropertyVariousImages1,
-                            onPickImage: () => _pickAndUploadImage(
+                            onPickImage: () => _showImageSourceDialog(
                               imageType: 'property_various_1',
                               onUploadComplete: (url) =>
                                   _propertyVariousImages1Url = url,
@@ -318,7 +417,7 @@ class _Step8PropertyImagesScreenState
                             imageUrl: _propertyVariousImages2Url,
                             isUploading: _isUploadingPropertyVariousImages2,
                             uploadProgress: _progressPropertyVariousImages2,
-                            onPickImage: () => _pickAndUploadImage(
+                            onPickImage: () => _showImageSourceDialog(
                               imageType: 'property_various_2',
                               onUploadComplete: (url) =>
                                   _propertyVariousImages2Url = url,
@@ -336,7 +435,7 @@ class _Step8PropertyImagesScreenState
                             imageUrl: _satelliteLocationImageUrl,
                             isUploading: _isUploadingSatelliteLocation,
                             uploadProgress: _progressSatelliteLocation,
-                            onPickImage: () => _pickAndUploadImage(
+                            onPickImage: () => _showImageSourceDialog(
                               imageType: 'satellite_location',
                               onUploadComplete: (url) =>
                                   _satelliteLocationImageUrl = url,
@@ -353,7 +452,7 @@ class _Step8PropertyImagesScreenState
                             imageUrl: _civilPlotMapImageUrl,
                             isUploading: _isUploadingCivilPlotMap,
                             uploadProgress: _progressCivilPlotMap,
-                            onPickImage: () => _pickAndUploadImage(
+                            onPickImage: () => _showImageSourceDialog(
                               imageType: 'civil_plot_map',
                               onUploadComplete: (url) =>
                                   _civilPlotMapImageUrl = url,
