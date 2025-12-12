@@ -1,11 +1,54 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow all read/write access to evaluation_images folder
-    // This is for internal company app - adjust security later if needed
-    match /evaluation_images/{evaluationId}/{allPaths=**} {
-      allow read, write: if true;
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check file size (max 10MB)
+    function isValidFileSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // Helper function to check if file is an image
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // Evaluation images - requires authentication
+    match /evaluation_images/{evaluationId}/{fileName} {
+      // Allow read if user is authenticated
+      allow read: if isAuthenticated();
+      
+      // Allow write if user is authenticated, file is valid image, and within size limit
+      allow write: if isAuthenticated() && 
+                      isImage() && 
+                      isValidFileSize();
+      
+      // Allow delete if user is authenticated
+      allow delete: if isAuthenticated();
+    }
+    
+    // User profile images
+    match /user_profiles/{userId}/{fileName} {
+      // Allow read for authenticated users
+      allow read: if isAuthenticated();
+      
+      // Allow write only for the user's own profile
+      allow write: if isAuthenticated() && 
+                      request.auth.uid == userId &&
+                      isImage() && 
+                      isValidFileSize();
+      
+      // Allow delete only for the user's own profile
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Deny all other access by default
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }
-

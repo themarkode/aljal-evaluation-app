@@ -80,7 +80,7 @@ class EvaluationService {
       final data = doc.data() as Map<String, dynamic>;
       // Ensure evaluationId is set from document ID
       data['evaluationId'] = doc.id;
-      
+
       return EvaluationModel.fromJson(data);
     } catch (e) {
       throw Exception('Failed to get evaluation: $e');

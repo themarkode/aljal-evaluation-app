@@ -139,66 +139,66 @@ class _Step2GeneralPropertyInfoScreenState
       return;
     }
 
-      // Create GeneralPropertyInfoModel
-      final propertyInfo = GeneralPropertyInfoModel(
-        governorate: _governorate,
-        area: _areaController.text.trim().isEmpty
-            ? null
-            : _areaController.text.trim(),
-        plotNumber: _plotNumberController.text.trim().isEmpty
-            ? null
-            : _plotNumberController.text.trim(),
-        parcelNumber: _parcelNumberController.text.trim().isEmpty
-            ? null
-            : _parcelNumberController.text.trim(),
-        planNumber: _planNumberController.text.trim().isEmpty
-            ? null
-            : _planNumberController.text.trim(),
-        documentNumber: _documentNumberController.text.trim().isEmpty
-            ? null
-            : _documentNumberController.text.trim(),
-        documentDate: _documentDate,
-        areaSize: _areaSizeController.text.trim().isEmpty
-            ? null
-            : double.tryParse(_areaSizeController.text.trim()),
-        propertyType: _propertyType,
-        autoNumber: _autoNumberController.text.trim().isEmpty
-            ? null
-            : _autoNumberController.text.trim(),
-        houseNumber: _houseNumberController.text.trim().isEmpty
-            ? null
-            : _houseNumberController.text.trim(),
-        streetCount: _streetCountController.text.trim().isEmpty
-            ? null
-            : int.tryParse(_streetCountController.text.trim()),
-        parkingCount: _parkingCountController.text.trim().isEmpty
-            ? null
-            : int.tryParse(_parkingCountController.text.trim()),
-        landNotes: _landNotesController.text.trim().isEmpty
-            ? null
-            : _landNotesController.text.trim(),
-        landFacing: _landFacingController.text.trim().isEmpty
-            ? null
-            : _landFacingController.text.trim(),
-        landShape: _landShapeController.text.trim().isEmpty
-            ? null
-            : _landShapeController.text.trim(),
-      );
+    // Create GeneralPropertyInfoModel
+    final propertyInfo = GeneralPropertyInfoModel(
+      governorate: _governorate,
+      area: _areaController.text.trim().isEmpty
+          ? null
+          : _areaController.text.trim(),
+      plotNumber: _plotNumberController.text.trim().isEmpty
+          ? null
+          : _plotNumberController.text.trim(),
+      parcelNumber: _parcelNumberController.text.trim().isEmpty
+          ? null
+          : _parcelNumberController.text.trim(),
+      planNumber: _planNumberController.text.trim().isEmpty
+          ? null
+          : _planNumberController.text.trim(),
+      documentNumber: _documentNumberController.text.trim().isEmpty
+          ? null
+          : _documentNumberController.text.trim(),
+      documentDate: _documentDate,
+      areaSize: _areaSizeController.text.trim().isEmpty
+          ? null
+          : double.tryParse(_areaSizeController.text.trim()),
+      propertyType: _propertyType,
+      autoNumber: _autoNumberController.text.trim().isEmpty
+          ? null
+          : _autoNumberController.text.trim(),
+      houseNumber: _houseNumberController.text.trim().isEmpty
+          ? null
+          : _houseNumberController.text.trim(),
+      streetCount: _streetCountController.text.trim().isEmpty
+          ? null
+          : int.tryParse(_streetCountController.text.trim()),
+      parkingCount: _parkingCountController.text.trim().isEmpty
+          ? null
+          : int.tryParse(_parkingCountController.text.trim()),
+      landNotes: _landNotesController.text.trim().isEmpty
+          ? null
+          : _landNotesController.text.trim(),
+      landFacing: _landFacingController.text.trim().isEmpty
+          ? null
+          : _landFacingController.text.trim(),
+      landShape: _landShapeController.text.trim().isEmpty
+          ? null
+          : _landShapeController.text.trim(),
+    );
 
-      // Update state
-      ref
-          .read(evaluationNotifierProvider.notifier)
-          .updateGeneralPropertyInfo(propertyInfo);
+    // Update state
+    ref
+        .read(evaluationNotifierProvider.notifier)
+        .updateGeneralPropertyInfo(propertyInfo);
 
     // Navigate to Step 3 (which currently routes to Step 4)
-      Navigator.pushReplacementNamed(
-        context,
-        RouteNames.formStep3,
-        arguments: FormStepArguments.forStep(
-          step: 3,
-          evaluationId: widget.evaluationId,
-        ),
-      );
+    Navigator.pushReplacementNamed(
+      context,
+      RouteNames.formStep3,
+      arguments: FormStepArguments.forStep(
+        step: 3,
+        evaluationId: widget.evaluationId,
+      ),
+    );
   }
 
   void _goBack() {

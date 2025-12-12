@@ -74,14 +74,21 @@ class _Step3PropertyDescriptionScreenState
 
     if (propertyDescription != null) {
       _propertyAgeController.text = propertyDescription.propertyAge ?? '';
-      _exteriorCladdingController.text = propertyDescription.exteriorCladding ?? '';
-      _elevatorCountController.text = propertyDescription.elevatorCount?.toString() ?? '';
-      _escalatorCountController.text = propertyDescription.escalatorCount?.toString() ?? '';
+      _exteriorCladdingController.text =
+          propertyDescription.exteriorCladding ?? '';
+      _elevatorCountController.text =
+          propertyDescription.elevatorCount?.toString() ?? '';
+      _escalatorCountController.text =
+          propertyDescription.escalatorCount?.toString() ?? '';
       _publicServicesController.text = propertyDescription.publicServices ?? '';
-      _neighboringPropertyTypesController.text = propertyDescription.neighboringPropertyTypes ?? '';
-      _buildingRatioController.text = propertyDescription.buildingRatio?.toString() ?? '';
-      _exteriorFacadesController.text = propertyDescription.exteriorFacades ?? '';
-      _maintenanceNotesController.text = propertyDescription.maintenanceNotes ?? '';
+      _neighboringPropertyTypesController.text =
+          propertyDescription.neighboringPropertyTypes ?? '';
+      _buildingRatioController.text =
+          propertyDescription.buildingRatio?.toString() ?? '';
+      _exteriorFacadesController.text =
+          propertyDescription.exteriorFacades ?? '';
+      _maintenanceNotesController.text =
+          propertyDescription.maintenanceNotes ?? '';
 
       setState(() {
         _propertyCondition = propertyDescription.propertyCondition;
@@ -127,9 +134,10 @@ class _Step3PropertyDescriptionScreenState
         publicServices: _publicServicesController.text.trim().isEmpty
             ? null
             : _publicServicesController.text.trim(),
-        neighboringPropertyTypes: _neighboringPropertyTypesController.text.trim().isEmpty
-            ? null
-            : _neighboringPropertyTypesController.text.trim(),
+        neighboringPropertyTypes:
+            _neighboringPropertyTypesController.text.trim().isEmpty
+                ? null
+                : _neighboringPropertyTypesController.text.trim(),
         buildingRatio: _buildingRatioController.text.trim().isEmpty
             ? null
             : double.tryParse(_buildingRatioController.text.trim()),

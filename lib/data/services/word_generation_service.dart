@@ -15,13 +15,13 @@ class WordGenerationService {
   final Map<String, String> _imageRelationshipIds = {};
   // Map content control tags to new image filenames
   final Map<String, String> _tagToImageMap = {};
-  
+
   Future<File> generateWordDocument(EvaluationModel evaluation) async {
     try {
       _downloadedImages.clear();
       _imageRelationshipIds.clear();
       _tagToImageMap.clear();
-      
+
       // Load template from assets
       ByteData templateData =
           await rootBundle.load('assets/word_template/template.docx');
@@ -42,18 +42,19 @@ class WordGenerationService {
 
       // Download images first
       await _downloadAndPrepareImages(evaluation, archive);
-      
+
       // Generate relationship IDs for new images BEFORE modifying XML
-      ArchiveFile? relsFile = _findFile(archive, 'word/_rels/document.xml.rels');
+      ArchiveFile? relsFile =
+          _findFile(archive, 'word/_rels/document.xml.rels');
       if (relsFile != null && _downloadedImages.isNotEmpty) {
         String relsContent = utf8.decode(relsFile.content);
         _generateImageRelationshipIds(relsContent);
       }
-      
+
       // Replace all content types
       _replaceTextFields(xmlDoc, evaluation);
       _replaceRepeatingSection(xmlDoc, evaluation);
-      
+
       // Update image references in document XML using new relationship IDs
       _updateImageReferences(xmlDoc);
       _replaceHyperlinks(xmlDoc, evaluation);
@@ -69,7 +70,7 @@ class WordGenerationService {
       if (newDocxBytes == null) {
         throw Exception('Failed to encode ZIP archive');
       }
-      
+
       // Try external storage first, fall back to app documents
       Directory? outputDir;
       try {
@@ -77,15 +78,15 @@ class WordGenerationService {
       } catch (e) {
         // External storage not available
       }
-      
+
       outputDir ??= await getApplicationDocumentsDirectory();
-      
+
       String fileName = _generateFileName(evaluation);
       String filePath = '${outputDir.path}/$fileName';
-      
+
       File outputFile = File(filePath);
       await outputFile.writeAsBytes(newDocxBytes);
-      
+
       // Verify file exists
       bool exists = await outputFile.exists();
       int fileSize = exists ? await outputFile.length() : 0;
@@ -99,9 +100,10 @@ class WordGenerationService {
       throw Exception('Failed to generate Word document: $e');
     }
   }
-  
+
   // Download images and create new image files for each placeholder
-  Future<void> _downloadAndPrepareImages(EvaluationModel evaluation, Archive archive) async {
+  Future<void> _downloadAndPrepareImages(
+      EvaluationModel evaluation, Archive archive) async {
     if (evaluation.propertyImages == null) {
       return;
     }
@@ -111,34 +113,53 @@ class WordGenerationService {
     // Include multiple variations of tag names to handle different template formats
     Map<String, MapEntry<String, String?>> tagToImageUrl = {
       // Location map image - different possible tag names
-      'صور_لموقع_العقار_حسب_المخطط_العام_لبلدية_الكويت': MapEntry('new_image_1.jpg', evaluation.propertyImages!.propertyLocationMapImageUrl),
-      'صور_لموقع_العقار': MapEntry('new_image_1.jpg', evaluation.propertyImages!.propertyLocationMapImageUrl),
-      
+      'صور_لموقع_العقار_حسب_المخطط_العام_لبلدية_الكويت': MapEntry(
+          'new_image_1.jpg',
+          evaluation.propertyImages!.propertyLocationMapImageUrl),
+      'صور_لموقع_العقار': MapEntry('new_image_1.jpg',
+          evaluation.propertyImages!.propertyLocationMapImageUrl),
+
       // Property image
-      'صورة_للعقار': MapEntry('new_image_2.jpg', evaluation.propertyImages!.propertyImageUrl),
-      'صوره_للعقار': MapEntry('new_image_2.jpg', evaluation.propertyImages!.propertyImageUrl),
-      
+      'صورة_للعقار': MapEntry(
+          'new_image_2.jpg', evaluation.propertyImages!.propertyImageUrl),
+      'صوره_للعقار': MapEntry(
+          'new_image_2.jpg', evaluation.propertyImages!.propertyImageUrl),
+
       // Various property images 1 - multiple possible tag formats
-      '1_صور_مختلفة_للعقار': MapEntry('new_image_3.jpg', evaluation.propertyImages!.propertyVariousImages1Url),
-      'صور_مختلفة_للعقار_1': MapEntry('new_image_3.jpg', evaluation.propertyImages!.propertyVariousImages1Url),
-      'صور_مختلفة_للعقار1': MapEntry('new_image_3.jpg', evaluation.propertyImages!.propertyVariousImages1Url),
-      'صور_مختلفه_للعقار_1': MapEntry('new_image_3.jpg', evaluation.propertyImages!.propertyVariousImages1Url),
-      'صور_مختلفه_للعقار1': MapEntry('new_image_3.jpg', evaluation.propertyImages!.propertyVariousImages1Url),
-      
+      '1_صور_مختلفة_للعقار': MapEntry('new_image_3.jpg',
+          evaluation.propertyImages!.propertyVariousImages1Url),
+      'صور_مختلفة_للعقار_1': MapEntry('new_image_3.jpg',
+          evaluation.propertyImages!.propertyVariousImages1Url),
+      'صور_مختلفة_للعقار1': MapEntry('new_image_3.jpg',
+          evaluation.propertyImages!.propertyVariousImages1Url),
+      'صور_مختلفه_للعقار_1': MapEntry('new_image_3.jpg',
+          evaluation.propertyImages!.propertyVariousImages1Url),
+      'صور_مختلفه_للعقار1': MapEntry('new_image_3.jpg',
+          evaluation.propertyImages!.propertyVariousImages1Url),
+
       // Various property images 2 - multiple possible tag formats
-      '2_صور_مختلفة_للعقار': MapEntry('new_image_4.jpg', evaluation.propertyImages!.propertyVariousImages2Url),
-      'صور_مختلفة_للعقار_2': MapEntry('new_image_4.jpg', evaluation.propertyImages!.propertyVariousImages2Url),
-      'صور_مختلفة_للعقار2': MapEntry('new_image_4.jpg', evaluation.propertyImages!.propertyVariousImages2Url),
-      'صور_مختلفه_للعقار_2': MapEntry('new_image_4.jpg', evaluation.propertyImages!.propertyVariousImages2Url),
-      'صور_مختلفه_للعقار2': MapEntry('new_image_4.jpg', evaluation.propertyImages!.propertyVariousImages2Url),
-      
+      '2_صور_مختلفة_للعقار': MapEntry('new_image_4.jpg',
+          evaluation.propertyImages!.propertyVariousImages2Url),
+      'صور_مختلفة_للعقار_2': MapEntry('new_image_4.jpg',
+          evaluation.propertyImages!.propertyVariousImages2Url),
+      'صور_مختلفة_للعقار2': MapEntry('new_image_4.jpg',
+          evaluation.propertyImages!.propertyVariousImages2Url),
+      'صور_مختلفه_للعقار_2': MapEntry('new_image_4.jpg',
+          evaluation.propertyImages!.propertyVariousImages2Url),
+      'صور_مختلفه_للعقار2': MapEntry('new_image_4.jpg',
+          evaluation.propertyImages!.propertyVariousImages2Url),
+
       // Satellite image
-      'صورة_لموقع_العقار_من_القمر_الصناعي': MapEntry('new_image_5.jpg', evaluation.propertyImages!.satelliteLocationImageUrl),
-      'صوره_لموقع_العقار_من_القمر_الصناعي': MapEntry('new_image_5.jpg', evaluation.propertyImages!.satelliteLocationImageUrl),
-      
+      'صورة_لموقع_العقار_من_القمر_الصناعي': MapEntry('new_image_5.jpg',
+          evaluation.propertyImages!.satelliteLocationImageUrl),
+      'صوره_لموقع_العقار_من_القمر_الصناعي': MapEntry('new_image_5.jpg',
+          evaluation.propertyImages!.satelliteLocationImageUrl),
+
       // Civil plot map
-      'صور_لموقع_القطعة_المدنية_حسب_المخطط_العام_لبلدية_الكويت': MapEntry('new_image_6.jpg', evaluation.propertyImages!.civilPlotMapImageUrl),
-      'صور_لموقع_القطعه_المدنيه': MapEntry('new_image_6.jpg', evaluation.propertyImages!.civilPlotMapImageUrl),
+      'صور_لموقع_القطعة_المدنية_حسب_المخطط_العام_لبلدية_الكويت': MapEntry(
+          'new_image_6.jpg', evaluation.propertyImages!.civilPlotMapImageUrl),
+      'صور_لموقع_القطعه_المدنيه': MapEntry(
+          'new_image_6.jpg', evaluation.propertyImages!.civilPlotMapImageUrl),
     };
 
     // Download each image and store with new unique filenames
@@ -146,11 +167,11 @@ class WordGenerationService {
       String tag = entry.key;
       String newImageName = entry.value.key;
       String? imageUrl = entry.value.value;
-      
+
       if (imageUrl != null && imageUrl.isNotEmpty) {
         try {
           http.Response response = await http.get(Uri.parse(imageUrl));
-          
+
           if (response.statusCode == 200) {
             _downloadedImages['word/media/$newImageName'] = response.bodyBytes;
             _tagToImageMap[tag] = newImageName;
@@ -465,7 +486,7 @@ class WordGenerationService {
       int rId = int.parse(match.group(1)!);
       if (rId > maxRId) maxRId = rId;
     }
-    
+
     // Generate relationship IDs for each new image
     int imageIndex = 1;
     for (String imagePath in _downloadedImages.keys) {
@@ -475,7 +496,7 @@ class WordGenerationService {
       imageIndex++;
     }
   }
-  
+
   // Update image references in content controls to use new relationship IDs
   void _updateImageReferences(XmlDocument xmlDoc) {
     // Update image references
@@ -485,38 +506,38 @@ class WordGenerationService {
           .firstOrNull
           ?.findElements('w:tag')
           .firstOrNull;
-      
+
       String? tagValue = tagElement?.getAttribute('w:val');
       if (tagValue == null) continue;
-      
+
       // Check if this tag has a corresponding new image (try exact match first)
       String? newImageFilename = _tagToImageMap[tagValue];
-      
+
       // If not found, try matching with flexible patterns
       if (newImageFilename == null) {
         // Normalize tag for comparison (remove extra spaces/underscores, normalize Arabic letters)
         String normalizedTag = tagValue
-            .replaceAll('ه', 'ة')  // Normalize ه to ة
-            .replaceAll('ي', 'ى')  // Normalize ي to ى
+            .replaceAll('ه', 'ة') // Normalize ه to ة
+            .replaceAll('ي', 'ى') // Normalize ي to ى
             .replaceAll(' ', '_')
             .toLowerCase();
-        
+
         for (var entry in _tagToImageMap.entries) {
           String normalizedKey = entry.key
               .replaceAll('ه', 'ة')
               .replaceAll('ي', 'ى')
               .replaceAll(' ', '_')
               .toLowerCase();
-          
+
           // Try if the template tag contains our key or vice versa
-          if (normalizedTag.contains(normalizedKey) || 
+          if (normalizedTag.contains(normalizedKey) ||
               normalizedKey.contains(normalizedTag) ||
-              tagValue.contains(entry.key) || 
+              tagValue.contains(entry.key) ||
               entry.key.contains(tagValue)) {
             newImageFilename = entry.value;
             break;
           }
-          
+
           // Also check for partial matches with key parts
           if (tagValue.contains('مختلفة') || tagValue.contains('مختلفه')) {
             if (tagValue.contains('1') && entry.key.contains('1')) {
@@ -530,12 +551,12 @@ class WordGenerationService {
           }
         }
       }
-      
+
       if (newImageFilename == null) continue;
-      
+
       String? newRId = _imageRelationshipIds[newImageFilename];
       if (newRId == null) continue;
-      
+
       // Find the blip element and update its embed attribute
       for (XmlElement blip in sdt.findAllElements('a:blip')) {
         blip.setAttribute('r:embed', newRId);
@@ -549,13 +570,14 @@ class WordGenerationService {
 
     // Convert XML to UTF-8 bytes (important for Arabic text!)
     List<int> xmlBytes = utf8.encode(modifiedXml);
-    
+
     // Build updated relationships XML
     String? updatedRelsXml;
-    ArchiveFile? relsFile = _findFile(originalArchive, 'word/_rels/document.xml.rels');
+    ArchiveFile? relsFile =
+        _findFile(originalArchive, 'word/_rels/document.xml.rels');
     if (relsFile != null && _downloadedImages.isNotEmpty) {
       String relsContent = utf8.decode(relsFile.content);
-      
+
       // Build new relationships
       StringBuffer newRels = StringBuffer();
       for (String imagePath in _downloadedImages.keys) {
@@ -563,27 +585,23 @@ class WordGenerationService {
         String? rId = _imageRelationshipIds[imageName];
         if (rId != null) {
           newRels.writeln(
-            '<Relationship Id="$rId" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/$imageName"/>'
-          );
+              '<Relationship Id="$rId" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/$imageName"/>');
         }
       }
-      
+
       updatedRelsXml = relsContent.replaceFirst(
-        '</Relationships>', 
-        '${newRels.toString()}</Relationships>'
-      );
+          '</Relationships>', '${newRels.toString()}</Relationships>');
     }
-    
+
     // Update Content_Types to include jpg if needed
     String? updatedContentTypes;
-    ArchiveFile? contentTypesFile = _findFile(originalArchive, '[Content_Types].xml');
+    ArchiveFile? contentTypesFile =
+        _findFile(originalArchive, '[Content_Types].xml');
     if (contentTypesFile != null && _downloadedImages.isNotEmpty) {
       String contentTypesContent = utf8.decode(contentTypesFile.content);
       if (!contentTypesContent.contains('Extension="jpg"')) {
-        updatedContentTypes = contentTypesContent.replaceFirst(
-          '</Types>',
-          '<Default Extension="jpg" ContentType="image/jpeg"/></Types>'
-        );
+        updatedContentTypes = contentTypesContent.replaceFirst('</Types>',
+            '<Default Extension="jpg" ContentType="image/jpeg"/></Types>');
       }
     }
 
@@ -595,7 +613,8 @@ class WordGenerationService {
           xmlBytes.length,
           xmlBytes,
         ));
-      } else if (file.name == 'word/_rels/document.xml.rels' && updatedRelsXml != null) {
+      } else if (file.name == 'word/_rels/document.xml.rels' &&
+          updatedRelsXml != null) {
         // Replace relationships file with updated version
         List<int> relsBytes = utf8.encode(updatedRelsXml);
         newArchive.addFile(ArchiveFile(
@@ -603,7 +622,8 @@ class WordGenerationService {
           relsBytes.length,
           relsBytes,
         ));
-      } else if (file.name == '[Content_Types].xml' && updatedContentTypes != null) {
+      } else if (file.name == '[Content_Types].xml' &&
+          updatedContentTypes != null) {
         // Replace content types file
         List<int> ctBytes = utf8.encode(updatedContentTypes);
         newArchive.addFile(ArchiveFile(
@@ -616,7 +636,7 @@ class WordGenerationService {
         newArchive.addFile(file);
       }
     }
-    
+
     // Add NEW image files to the archive
     for (var entry in _downloadedImages.entries) {
       newArchive.addFile(ArchiveFile(
@@ -632,13 +652,14 @@ class WordGenerationService {
   String _generateFileName(EvaluationModel evaluation) {
     // Use safe English filename with timestamp
     final now = DateTime.now();
-    final timestamp = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
-    
+    final timestamp =
+        '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+
     // Use evaluation ID if available, otherwise use timestamp
     String id = evaluation.evaluationId ?? 'evaluation';
     // Remove any unsafe characters
     id = id.replaceAll(RegExp(r'[^\w]'), '_');
-    
+
     return 'AlJal_Evaluation_${id}_$timestamp.docx';
   }
 }
