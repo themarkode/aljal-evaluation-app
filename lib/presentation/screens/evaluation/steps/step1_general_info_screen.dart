@@ -66,15 +66,14 @@ class _Step1GeneralInfoScreenState
     // If editing an existing evaluation, load it from Firebase
     if (widget.evaluationId != null) {
       try {
-        // Always load fresh data when editing
+        // Load fresh data when editing - loadEvaluation awaits the Firebase call
+        // and updates state synchronously, so no delay is needed
         await ref
             .read(evaluationNotifierProvider.notifier)
             .loadEvaluation(widget.evaluationId!);
-        
-        // Wait a bit to ensure state is updated
-        await Future.delayed(const Duration(milliseconds: 300));
-        
-        // Load data into form fields after evaluation is loaded
+
+        // Load data into form fields immediately after evaluation is loaded
+        // The state is already updated once loadEvaluation completes
         if (mounted) {
           _loadExistingData();
         }
@@ -189,7 +188,7 @@ class _Step1GeneralInfoScreenState
     // Note: We use ref.read() here instead of ref.watch() because form data
     // loading is handled in initState via _loadEvaluation(). Using watch()
     // would cause unnecessary rebuilds and the postFrameCallback anti-pattern.
-    
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(

@@ -277,47 +277,46 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen> {
             ],
           ),
         ),
-        // Beautiful floating action button
-        floatingActionButton: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.navy.withOpacity(0.4),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _onAddNew,
+        // Beautiful floating action button with gradient
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _onAddNew,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          highlightElevation: 0,
+          label: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'إنشاء نموذج جديد',
-                      style: AppTypography.labelMedium.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.navy.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
                 ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'إنشاء نموذج جديد',
+                    style: AppTypography.labelMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
