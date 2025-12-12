@@ -7,7 +7,7 @@ part of 'evaluation_provider.dart';
 // **************************************************************************
 
 String _$evaluationNotifierHash() =>
-    r'da417e25ce5f8cec5bd2e82bd17abd87204469d5';
+    r'09d8460571a98222b9e506ea6d4475b33a8de336';
 
 /// See also [EvaluationNotifier].
 @ProviderFor(EvaluationNotifier)

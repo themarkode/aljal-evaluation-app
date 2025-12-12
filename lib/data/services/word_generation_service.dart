@@ -18,37 +18,29 @@ class WordGenerationService {
   
   Future<File> generateWordDocument(EvaluationModel evaluation) async {
     try {
-      print('📄 WordGen: Starting document generation...');
       _downloadedImages.clear();
       _imageRelationshipIds.clear();
       _tagToImageMap.clear();
       
       // Load template from assets
-      print('📄 WordGen: Loading template from assets...');
       ByteData templateData =
           await rootBundle.load('assets/word_template/template.docx');
       List<int> templateBytes = templateData.buffer.asUint8List();
-      print('📄 WordGen: Template loaded, size: ${templateBytes.length} bytes');
 
       // Extract ZIP archive
-      print('📄 WordGen: Extracting ZIP archive...');
       Archive archive = ZipDecoder().decodeBytes(templateBytes);
-      print('📄 WordGen: Archive extracted, files: ${archive.length}');
 
       // Find and modify document.xml
       ArchiveFile? documentXml = _findFile(archive, 'word/document.xml');
       if (documentXml == null) {
         throw Exception('Could not find document.xml in template');
       }
-      print('📄 WordGen: Found document.xml');
 
       // Parse XML - MUST decode as UTF-8 for Arabic text!
       String xmlContent = utf8.decode(documentXml.content);
       XmlDocument xmlDoc = XmlDocument.parse(xmlContent);
-      print('📄 WordGen: XML parsed successfully');
 
       // Download images first
-      print('📄 WordGen: Downloading images...');
       await _downloadAndPrepareImages(evaluation, archive);
       
       // Generate relationship IDs for new images BEFORE modifying XML
@@ -59,52 +51,37 @@ class WordGenerationService {
       }
       
       // Replace all content types
-      print('📄 WordGen: Replacing text fields...');
       _replaceTextFields(xmlDoc, evaluation);
-      
-      print('📄 WordGen: Replacing repeating sections...');
       _replaceRepeatingSection(xmlDoc, evaluation);
       
       // Update image references in document XML using new relationship IDs
-      print('📄 WordGen: Updating image references...');
       _updateImageReferences(xmlDoc);
-      
-      print('📄 WordGen: Replacing hyperlinks...');
       _replaceHyperlinks(xmlDoc, evaluation);
 
       // Convert back to string
       String modifiedXml = xmlDoc.toXmlString(pretty: false);
-      print('📄 WordGen: Modified XML created');
 
       // Create new archive with images
-      print('📄 WordGen: Creating new archive with images...');
       Archive newArchive = await _createModifiedArchive(archive, modifiedXml);
 
-      // Save file - use external storage for better accessibility
-      print('📄 WordGen: Encoding ZIP...');
+      // Save file
       List<int>? newDocxBytes = ZipEncoder().encode(newArchive);
       if (newDocxBytes == null) {
         throw Exception('Failed to encode ZIP archive');
       }
-      print('📄 WordGen: ZIP encoded, size: ${newDocxBytes.length} bytes');
       
       // Try external storage first, fall back to app documents
       Directory? outputDir;
       try {
         outputDir = await getExternalStorageDirectory();
-        print('📄 WordGen: Using external storage: ${outputDir?.path}');
       } catch (e) {
-        print('📄 WordGen: External storage not available: $e');
+        // External storage not available
       }
       
-      if (outputDir == null) {
-        outputDir = await getApplicationDocumentsDirectory();
-        print('📄 WordGen: Using app documents: ${outputDir.path}');
-      }
+      outputDir ??= await getApplicationDocumentsDirectory();
       
       String fileName = _generateFileName(evaluation);
       String filePath = '${outputDir.path}/$fileName';
-      print('📄 WordGen: Saving to: $filePath');
       
       File outputFile = File(filePath);
       await outputFile.writeAsBytes(newDocxBytes);
@@ -112,17 +89,13 @@ class WordGenerationService {
       // Verify file exists
       bool exists = await outputFile.exists();
       int fileSize = exists ? await outputFile.length() : 0;
-      print('📄 WordGen: File saved - exists: $exists, size: $fileSize bytes');
 
       if (!exists || fileSize == 0) {
         throw Exception('File was not saved properly');
       }
 
-      print('✅ WordGen: Document generated successfully at: $filePath');
       return outputFile;
-    } catch (e, stackTrace) {
-      print('❌ WordGen: Error generating document: $e');
-      print('❌ WordGen: Stack trace: $stackTrace');
+    } catch (e) {
       throw Exception('Failed to generate Word document: $e');
     }
   }
@@ -130,7 +103,6 @@ class WordGenerationService {
   // Download images and create new image files for each placeholder
   Future<void> _downloadAndPrepareImages(EvaluationModel evaluation, Archive archive) async {
     if (evaluation.propertyImages == null) {
-      print('📄 WordGen: No property images to process');
       return;
     }
 
@@ -169,15 +141,7 @@ class WordGenerationService {
       'صور_لموقع_القطعه_المدنيه': MapEntry('new_image_6.jpg', evaluation.propertyImages!.civilPlotMapImageUrl),
     };
 
-    // Log existing template images
-    for (ArchiveFile file in archive) {
-      if (file.name.startsWith('word/media/')) {
-        print('📄 WordGen: Found template image: ${file.name}');
-      }
-    }
-
     // Download each image and store with new unique filenames
-    int downloadedCount = 0;
     for (var entry in tagToImageUrl.entries) {
       String tag = entry.key;
       String newImageName = entry.value.key;
@@ -185,25 +149,17 @@ class WordGenerationService {
       
       if (imageUrl != null && imageUrl.isNotEmpty) {
         try {
-          print('📄 WordGen: Downloading $newImageName for tag "$tag"');
           http.Response response = await http.get(Uri.parse(imageUrl));
           
           if (response.statusCode == 200) {
             _downloadedImages['word/media/$newImageName'] = response.bodyBytes;
-            _tagToImageMap[tag] = newImageName;  // Map tag to image filename
-            print('📄 WordGen: ✓ Downloaded ${response.bodyBytes.length} bytes as $newImageName');
-            downloadedCount++;
-          } else {
-            print('📄 WordGen: ✗ Failed: HTTP ${response.statusCode}');
+            _tagToImageMap[tag] = newImageName;
           }
         } catch (e) {
-          print('📄 WordGen: ✗ Error: $e');
+          // Skip this image if download fails
         }
       }
     }
-    
-    print('📄 WordGen: Downloaded $downloadedCount new images');
-    print('📄 WordGen: Tag to image map: $_tagToImageMap');
   }
 
   // Replace text content controls
@@ -258,7 +214,6 @@ class WordGenerationService {
     // Find the parent table by looking for w:tbl element
     XmlElement? parentTable;
 
-    // Fix: Change XmlElement to XmlNode and add type check
     for (XmlNode ancestor in repeatingSection.ancestors) {
       if (ancestor is XmlElement && ancestor.name.local == 'tbl') {
         parentTable = ancestor;
@@ -304,8 +259,6 @@ class WordGenerationService {
     }
   }
 
-  // Replace images with actual image data
-
   // Replace hyperlinks
   void _replaceHyperlinks(XmlDocument xmlDoc, EvaluationModel evaluation) {
     if (evaluation.propertyImages?.locationAddressText != null) {
@@ -316,7 +269,6 @@ class WordGenerationService {
       _createHyperlink(xmlDoc, 'موقع_العقار', addressText, addressLink);
     }
   }
-
 
   // Create hyperlink
   void _createHyperlink(
@@ -329,7 +281,6 @@ class WordGenerationService {
           .firstOrNull;
 
       if (tagElement?.getAttribute('w:val') == tagName) {
-        // Simplified hyperlink creation
         _replaceContentControlText(element, '$text ($url)');
       }
     }
@@ -521,32 +472,13 @@ class WordGenerationService {
       String imageName = imagePath.split('/').last;
       int newRId = maxRId + imageIndex;
       _imageRelationshipIds[imageName] = 'rId$newRId';
-      print('📄 WordGen: Will create relationship rId$newRId for $imageName');
       imageIndex++;
     }
   }
   
   // Update image references in content controls to use new relationship IDs
   void _updateImageReferences(XmlDocument xmlDoc) {
-    // First, log ALL content control tags that have images
-    print('📄 WordGen: Scanning for image content controls...');
-    for (XmlElement sdt in xmlDoc.findAllElements('w:sdt')) {
-      XmlElement? tagElement = sdt
-          .findElements('w:sdtPr')
-          .firstOrNull
-          ?.findElements('w:tag')
-          .firstOrNull;
-      
-      String? tagValue = tagElement?.getAttribute('w:val');
-      
-      // Check if this content control contains an image
-      bool hasImage = sdt.findAllElements('a:blip').isNotEmpty;
-      if (hasImage) {
-        print('📄 WordGen: Found image content control with tag: "$tagValue"');
-      }
-    }
-    
-    // Now update image references
+    // Update image references
     for (XmlElement sdt in xmlDoc.findAllElements('w:sdt')) {
       XmlElement? tagElement = sdt
           .findElements('w:sdtPr')
@@ -582,7 +514,6 @@ class WordGenerationService {
               tagValue.contains(entry.key) || 
               entry.key.contains(tagValue)) {
             newImageFilename = entry.value;
-            print('📄 WordGen: Fuzzy match: template "$tagValue" matched with "${entry.key}"');
             break;
           }
           
@@ -590,12 +521,10 @@ class WordGenerationService {
           if (tagValue.contains('مختلفة') || tagValue.contains('مختلفه')) {
             if (tagValue.contains('1') && entry.key.contains('1')) {
               newImageFilename = entry.value;
-              print('📄 WordGen: Partial match (1): template "$tagValue" matched with "${entry.key}"');
               break;
             }
             if (tagValue.contains('2') && entry.key.contains('2')) {
               newImageFilename = entry.value;
-              print('📄 WordGen: Partial match (2): template "$tagValue" matched with "${entry.key}"');
               break;
             }
           }
@@ -607,12 +536,8 @@ class WordGenerationService {
       String? newRId = _imageRelationshipIds[newImageFilename];
       if (newRId == null) continue;
       
-      print('📄 WordGen: Updating image for tag "$tagValue" to use $newRId');
-      
       // Find the blip element and update its embed attribute
       for (XmlElement blip in sdt.findAllElements('a:blip')) {
-        String? currentEmbed = blip.getAttribute('r:embed');
-        print('📄 WordGen:   - Changing r:embed from "$currentEmbed" to "$newRId"');
         blip.setAttribute('r:embed', newRId);
       }
     }
@@ -678,7 +603,6 @@ class WordGenerationService {
           relsBytes.length,
           relsBytes,
         ));
-        print('📄 WordGen: Updated relationships file');
       } else if (file.name == '[Content_Types].xml' && updatedContentTypes != null) {
         // Replace content types file
         List<int> ctBytes = utf8.encode(updatedContentTypes);
@@ -687,7 +611,6 @@ class WordGenerationService {
           ctBytes.length,
           ctBytes,
         ));
-        print('📄 WordGen: Updated Content_Types.xml');
       } else {
         // Keep original file
         newArchive.addFile(file);
@@ -696,7 +619,6 @@ class WordGenerationService {
     
     // Add NEW image files to the archive
     for (var entry in _downloadedImages.entries) {
-      print('📄 WordGen: Adding new image: ${entry.key} (${entry.value.length} bytes)');
       newArchive.addFile(ArchiveFile(
         entry.key,
         entry.value.length,

@@ -36,9 +36,10 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
+        Locale('ar', 'KW'), // Arabic (Kuwait) - primary
         Locale('en', 'US'), // English
-        Locale('ar', 'SA'), // Arabic
       ],
+      locale: const Locale('ar', 'KW'), // Default to Arabic Kuwait
     );
   }
 }

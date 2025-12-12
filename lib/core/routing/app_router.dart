@@ -6,7 +6,7 @@ import 'route_arguments.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/evaluation_list_screen.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step1_general_info_screen.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step2_general_property_info_screen.dart';
-// TODO: Import Step3PropertyDescriptionScreen once it's created with correct class name
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step3_property_description_screen.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step4_floors_screen.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step5_area_details_screen.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step6_income_notes_screen.dart';
@@ -161,9 +161,7 @@ class AppRouter {
         screen = Step2GeneralPropertyInfoScreen(evaluationId: evaluationId);
         break;
       case 3:
-        // TODO: Step3 file currently has wrong class name - routing to Step 4 temporarily
-        // Once Step3PropertyDescriptionScreen is created, replace this
-        screen = Step4FloorsScreen(evaluationId: evaluationId);
+        screen = Step3PropertyDescriptionScreen(evaluationId: evaluationId);
         break;
       case 4:
         screen = Step4FloorsScreen(evaluationId: evaluationId);

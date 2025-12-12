@@ -128,7 +128,7 @@ class _Step2GeneralPropertyInfoScreenState
 
   void _saveAndContinue() {
     // Validate form - show errors if validation fails
-    final isValid = _formKey.currentState?.validate() ?? true;
+    final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) {
       // Scroll to first error
       Scrollable.ensureVisible(

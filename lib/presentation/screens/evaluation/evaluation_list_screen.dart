@@ -73,13 +73,6 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen> {
   }
 
   void _onEditEvaluation(EvaluationModel evaluation) {
-    print('🖊️ Edit clicked:');
-    print('   - evaluationId: ${evaluation.evaluationId}');
-    print('   - has generalInfo: ${evaluation.generalInfo != null}');
-    if (evaluation.generalInfo != null) {
-      print('   - clientName: ${evaluation.generalInfo?.clientName}');
-    }
-    
     Navigator.pushNamed(
       context,
       RouteNames.formStep1,
@@ -134,7 +127,6 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen> {
         _showDocumentOptionsSheet(file);
       }
     } catch (e) {
-      print('❌ Export error: $e');
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
         UIHelpers.showErrorSnackBar(

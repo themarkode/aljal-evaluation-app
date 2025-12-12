@@ -9,70 +9,58 @@ import 'package:aljal_evaluation/core/constants/dropdown_options.dart';
 import 'package:aljal_evaluation/presentation/providers/evaluation_provider.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_text_field.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_dropdown.dart';
-import 'package:aljal_evaluation/presentation/widgets/atoms/custom_date_picker.dart';
 import 'package:aljal_evaluation/presentation/widgets/molecules/collapsible_section.dart';
 import 'package:aljal_evaluation/presentation/widgets/molecules/form_navigation_buttons.dart';
-import 'package:aljal_evaluation/data/models/pages_models/general_property_info_model.dart';
-import 'package:aljal_evaluation/presentation/shared/responsive/responsive_builder.dart';
+import 'package:aljal_evaluation/data/models/pages_models/property_description_model.dart';
 
-/// Step 2: General Property Information Screen
-class Step2GeneralPropertyInfoScreen extends ConsumerStatefulWidget {
+/// Step 3: Property Description Screen (وصف العقار)
+class Step3PropertyDescriptionScreen extends ConsumerStatefulWidget {
   final String? evaluationId;
 
-  const Step2GeneralPropertyInfoScreen({
+  const Step3PropertyDescriptionScreen({
     super.key,
     this.evaluationId,
   });
 
   @override
-  ConsumerState<Step2GeneralPropertyInfoScreen> createState() =>
-      _Step2GeneralPropertyInfoScreenState();
+  ConsumerState<Step3PropertyDescriptionScreen> createState() =>
+      _Step3PropertyDescriptionScreenState();
 }
 
-class _Step2GeneralPropertyInfoScreenState
-    extends ConsumerState<Step2GeneralPropertyInfoScreen> {
+class _Step3PropertyDescriptionScreenState
+    extends ConsumerState<Step3PropertyDescriptionScreen> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
-  late TextEditingController _areaController;
-  late TextEditingController _plotNumberController;
-  late TextEditingController _parcelNumberController;
-  late TextEditingController _planNumberController;
-  late TextEditingController _documentNumberController;
-  late TextEditingController _areaSizeController;
-  late TextEditingController _autoNumberController;
-  late TextEditingController _houseNumberController;
-  late TextEditingController _streetCountController;
-  late TextEditingController _parkingCountController;
-  late TextEditingController _landNotesController;
-  late TextEditingController _landFacingController;
-  late TextEditingController _landShapeController;
+  late TextEditingController _propertyAgeController;
+  late TextEditingController _exteriorCladdingController;
+  late TextEditingController _elevatorCountController;
+  late TextEditingController _escalatorCountController;
+  late TextEditingController _publicServicesController;
+  late TextEditingController _neighboringPropertyTypesController;
+  late TextEditingController _buildingRatioController;
+  late TextEditingController _exteriorFacadesController;
+  late TextEditingController _maintenanceNotesController;
 
   // Dropdown values
-  String? _governorate;
-  String? _propertyType;
-
-  // Date value
-  DateTime? _documentDate;
+  String? _propertyCondition;
+  String? _finishingType;
+  String? _airConditioningType;
 
   @override
   void initState() {
     super.initState();
 
     // Initialize controllers
-    _areaController = TextEditingController();
-    _plotNumberController = TextEditingController();
-    _parcelNumberController = TextEditingController();
-    _planNumberController = TextEditingController();
-    _documentNumberController = TextEditingController();
-    _areaSizeController = TextEditingController();
-    _autoNumberController = TextEditingController();
-    _houseNumberController = TextEditingController();
-    _streetCountController = TextEditingController();
-    _parkingCountController = TextEditingController();
-    _landNotesController = TextEditingController();
-    _landFacingController = TextEditingController();
-    _landShapeController = TextEditingController();
+    _propertyAgeController = TextEditingController();
+    _exteriorCladdingController = TextEditingController();
+    _elevatorCountController = TextEditingController();
+    _escalatorCountController = TextEditingController();
+    _publicServicesController = TextEditingController();
+    _neighboringPropertyTypesController = TextEditingController();
+    _buildingRatioController = TextEditingController();
+    _exteriorFacadesController = TextEditingController();
+    _maintenanceNotesController = TextEditingController();
 
     // Load existing data if editing
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -82,109 +70,88 @@ class _Step2GeneralPropertyInfoScreenState
 
   void _loadExistingData() {
     final evaluation = ref.read(evaluationNotifierProvider);
-    final propertyInfo = evaluation.generalPropertyInfo;
+    final propertyDescription = evaluation.propertyDescription;
 
-    if (propertyInfo != null) {
-      _areaController.text = propertyInfo.area ?? '';
-      _plotNumberController.text = propertyInfo.plotNumber ?? '';
-      _parcelNumberController.text = propertyInfo.parcelNumber ?? '';
-      _planNumberController.text = propertyInfo.planNumber ?? '';
-      _documentNumberController.text = propertyInfo.documentNumber ?? '';
-      _areaSizeController.text = propertyInfo.areaSize?.toString() ?? '';
-      _autoNumberController.text = propertyInfo.autoNumber ?? '';
-      _houseNumberController.text = propertyInfo.houseNumber ?? '';
-      _streetCountController.text = propertyInfo.streetCount?.toString() ?? '';
-      _parkingCountController.text =
-          propertyInfo.parkingCount?.toString() ?? '';
-      _landNotesController.text = propertyInfo.landNotes ?? '';
-      _landFacingController.text = propertyInfo.landFacing ?? '';
-      _landShapeController.text = propertyInfo.landShape ?? '';
+    if (propertyDescription != null) {
+      _propertyAgeController.text = propertyDescription.propertyAge ?? '';
+      _exteriorCladdingController.text = propertyDescription.exteriorCladding ?? '';
+      _elevatorCountController.text = propertyDescription.elevatorCount?.toString() ?? '';
+      _escalatorCountController.text = propertyDescription.escalatorCount?.toString() ?? '';
+      _publicServicesController.text = propertyDescription.publicServices ?? '';
+      _neighboringPropertyTypesController.text = propertyDescription.neighboringPropertyTypes ?? '';
+      _buildingRatioController.text = propertyDescription.buildingRatio?.toString() ?? '';
+      _exteriorFacadesController.text = propertyDescription.exteriorFacades ?? '';
+      _maintenanceNotesController.text = propertyDescription.maintenanceNotes ?? '';
 
       setState(() {
-        _governorate = propertyInfo.governorate;
-        _propertyType = propertyInfo.propertyType;
-        _documentDate = propertyInfo.documentDate;
+        _propertyCondition = propertyDescription.propertyCondition;
+        _finishingType = propertyDescription.finishingType;
+        _airConditioningType = propertyDescription.airConditioningType;
       });
     }
   }
 
   @override
   void dispose() {
-    _areaController.dispose();
-    _plotNumberController.dispose();
-    _parcelNumberController.dispose();
-    _planNumberController.dispose();
-    _documentNumberController.dispose();
-    _areaSizeController.dispose();
-    _autoNumberController.dispose();
-    _houseNumberController.dispose();
-    _streetCountController.dispose();
-    _parkingCountController.dispose();
-    _landNotesController.dispose();
-    _landFacingController.dispose();
-    _landShapeController.dispose();
+    _propertyAgeController.dispose();
+    _exteriorCladdingController.dispose();
+    _elevatorCountController.dispose();
+    _escalatorCountController.dispose();
+    _publicServicesController.dispose();
+    _neighboringPropertyTypesController.dispose();
+    _buildingRatioController.dispose();
+    _exteriorFacadesController.dispose();
+    _maintenanceNotesController.dispose();
     super.dispose();
   }
 
   void _saveAndContinue() {
     if (_formKey.currentState?.validate() ?? false) {
-      // Create GeneralPropertyInfoModel
-      final propertyInfo = GeneralPropertyInfoModel(
-        governorate: _governorate,
-        area: _areaController.text.trim().isEmpty
+      // Create PropertyDescriptionModel
+      final propertyDescription = PropertyDescriptionModel(
+        propertyCondition: _propertyCondition,
+        finishingType: _finishingType,
+        propertyAge: _propertyAgeController.text.trim().isEmpty
             ? null
-            : _areaController.text.trim(),
-        plotNumber: _plotNumberController.text.trim().isEmpty
+            : _propertyAgeController.text.trim(),
+        airConditioningType: _airConditioningType,
+        exteriorCladding: _exteriorCladdingController.text.trim().isEmpty
             ? null
-            : _plotNumberController.text.trim(),
-        parcelNumber: _parcelNumberController.text.trim().isEmpty
+            : _exteriorCladdingController.text.trim(),
+        elevatorCount: _elevatorCountController.text.trim().isEmpty
             ? null
-            : _parcelNumberController.text.trim(),
-        planNumber: _planNumberController.text.trim().isEmpty
+            : int.tryParse(_elevatorCountController.text.trim()),
+        escalatorCount: _escalatorCountController.text.trim().isEmpty
             ? null
-            : _planNumberController.text.trim(),
-        documentNumber: _documentNumberController.text.trim().isEmpty
+            : int.tryParse(_escalatorCountController.text.trim()),
+        publicServices: _publicServicesController.text.trim().isEmpty
             ? null
-            : _documentNumberController.text.trim(),
-        documentDate: _documentDate,
-        areaSize: _areaSizeController.text.trim().isEmpty
+            : _publicServicesController.text.trim(),
+        neighboringPropertyTypes: _neighboringPropertyTypesController.text.trim().isEmpty
             ? null
-            : double.tryParse(_areaSizeController.text.trim()),
-        propertyType: _propertyType,
-        autoNumber: _autoNumberController.text.trim().isEmpty
+            : _neighboringPropertyTypesController.text.trim(),
+        buildingRatio: _buildingRatioController.text.trim().isEmpty
             ? null
-            : _autoNumberController.text.trim(),
-        houseNumber: _houseNumberController.text.trim().isEmpty
+            : double.tryParse(_buildingRatioController.text.trim()),
+        exteriorFacades: _exteriorFacadesController.text.trim().isEmpty
             ? null
-            : _houseNumberController.text.trim(),
-        streetCount: _streetCountController.text.trim().isEmpty
+            : _exteriorFacadesController.text.trim(),
+        maintenanceNotes: _maintenanceNotesController.text.trim().isEmpty
             ? null
-            : int.tryParse(_streetCountController.text.trim()),
-        parkingCount: _parkingCountController.text.trim().isEmpty
-            ? null
-            : int.tryParse(_parkingCountController.text.trim()),
-        landNotes: _landNotesController.text.trim().isEmpty
-            ? null
-            : _landNotesController.text.trim(),
-        landFacing: _landFacingController.text.trim().isEmpty
-            ? null
-            : _landFacingController.text.trim(),
-        landShape: _landShapeController.text.trim().isEmpty
-            ? null
-            : _landShapeController.text.trim(),
+            : _maintenanceNotesController.text.trim(),
       );
 
       // Update state
       ref
           .read(evaluationNotifierProvider.notifier)
-          .updateGeneralPropertyInfo(propertyInfo);
+          .updatePropertyDescription(propertyDescription);
 
-      // Navigate to Step 3
+      // Navigate to Step 4 (Floors)
       Navigator.pushReplacementNamed(
         context,
-        RouteNames.formStep3,
+        RouteNames.formStep4,
         arguments: FormStepArguments.forStep(
-          step: 3,
+          step: 4,
           evaluationId: widget.evaluationId,
         ),
       );
@@ -194,9 +161,9 @@ class _Step2GeneralPropertyInfoScreenState
   void _goBack() {
     Navigator.pushReplacementNamed(
       context,
-      RouteNames.formStep1,
+      RouteNames.formStep2,
       arguments: FormStepArguments.forStep(
-        step: 1,
+        step: 2,
         evaluationId: widget.evaluationId,
       ),
     );
@@ -216,11 +183,11 @@ class _Step2GeneralPropertyInfoScreenState
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'معلومات عامة للعقار',
+                'وصف العقار',
                 style: AppTypography.heading,
               ),
               Image.asset(
-                'assets/images/logo.png',
+                'assets/images/Al_Jal_Logo.png',
                 height: 40,
                 errorBuilder: (context, error, stackTrace) {
                   return const Icon(Icons.business, size: 40);
@@ -238,20 +205,9 @@ class _Step2GeneralPropertyInfoScreenState
                   child: SingleChildScrollView(
                     padding: AppSpacing.screenPaddingMobileInsets,
                     child: CollapsibleSection(
-                      title: 'معلومات عامة للعقار',
+                      title: 'وصف العقار',
                       initiallyExpanded: true,
-                      child: ResponsiveBuilder(
-                        builder: (context, deviceType) {
-                          switch (deviceType) {
-                            case DeviceType.mobile:
-                              return _buildMobileLayout();
-                            case DeviceType.tablet:
-                              return _buildTabletLayout();
-                            case DeviceType.desktop:
-                              return _buildDesktopLayout();
-                          }
-                        },
-                      ),
+                      child: _buildFormFields(),
                     ),
                   ),
                 ),
@@ -271,8 +227,8 @@ class _Step2GeneralPropertyInfoScreenState
                   child: FormNavigationButtons(
                     onNext: _saveAndContinue,
                     onPrevious: _goBack,
-                    nextText: 'وصف العقار',
-                    previousText: 'معلومات عامة',
+                    nextText: 'الطوابق',
+                    previousText: 'معلومات عامة للعقار',
                     showPrevious: true,
                   ),
                 ),
@@ -284,256 +240,134 @@ class _Step2GeneralPropertyInfoScreenState
     );
   }
 
-  Widget _buildMobileLayout() {
+  Widget _buildFormFields() {
     return Column(
       children: [
-        _buildGovernorateField(),
+        // Property Condition Dropdown
+        CustomDropdown(
+          label: 'حالة العقار',
+          hint: 'اختر حالة العقار',
+          value: _propertyCondition,
+          items: DropdownOptions.propertyConditions,
+          onChanged: (value) {
+            setState(() {
+              _propertyCondition = value;
+            });
+          },
+        ),
         AppSpacing.verticalSpaceMD,
-        _buildAreaField(),
+
+        // Finishing Type Dropdown
+        CustomDropdown(
+          label: 'نوع التشطيب',
+          hint: 'اختر نوع التشطيب',
+          value: _finishingType,
+          items: DropdownOptions.finishingTypes,
+          onChanged: (value) {
+            setState(() {
+              _finishingType = value;
+            });
+          },
+        ),
         AppSpacing.verticalSpaceMD,
-        _buildPlotNumberField(),
+
+        // Property Age
+        CustomTextField(
+          controller: _propertyAgeController,
+          label: 'عمر العقار',
+          hint: 'عمر العقار بالسنوات',
+        ),
         AppSpacing.verticalSpaceMD,
-        _buildParcelNumberField(),
+
+        // Air Conditioning Type Dropdown
+        CustomDropdown(
+          label: 'نوع التكييف',
+          hint: 'اختر نوع التكييف',
+          value: _airConditioningType,
+          items: DropdownOptions.airConditioningTypes,
+          onChanged: (value) {
+            setState(() {
+              _airConditioningType = value;
+            });
+          },
+        ),
         AppSpacing.verticalSpaceMD,
-        _buildPlanNumberField(),
+
+        // Exterior Cladding
+        CustomTextField(
+          controller: _exteriorCladdingController,
+          label: 'التكسية الخارجية',
+          hint: 'التكسية الخارجية',
+        ),
         AppSpacing.verticalSpaceMD,
-        _buildDocumentNumberField(),
+
+        // Row for Elevator and Escalator counts
+        Row(
+          children: [
+            Expanded(
+              child: CustomTextField(
+                controller: _elevatorCountController,
+                label: 'عدد المصاعد',
+                hint: '0',
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            AppSpacing.horizontalSpaceMD,
+            Expanded(
+              child: CustomTextField(
+                controller: _escalatorCountController,
+                label: 'عدد السلالم المتحركة',
+                hint: '0',
+                keyboardType: TextInputType.number,
+              ),
+            ),
+          ],
+        ),
         AppSpacing.verticalSpaceMD,
-        _buildDocumentDateField(),
+
+        // Public Services
+        CustomTextField(
+          controller: _publicServicesController,
+          label: 'الخدمات والمرافق العامة',
+          hint: 'الخدمات والمرافق العامة',
+          maxLines: 2,
+        ),
         AppSpacing.verticalSpaceMD,
-        _buildAreaSizeField(),
+
+        // Neighboring Property Types
+        CustomTextField(
+          controller: _neighboringPropertyTypesController,
+          label: 'أنواع العقارات المجاورة',
+          hint: 'أنواع العقارات المجاورة',
+          maxLines: 2,
+        ),
         AppSpacing.verticalSpaceMD,
-        _buildPropertyTypeField(),
+
+        // Building Ratio
+        CustomTextField(
+          controller: _buildingRatioController,
+          label: 'نسبة البناء %',
+          hint: 'نسبة البناء',
+          keyboardType: TextInputType.number,
+        ),
         AppSpacing.verticalSpaceMD,
-        _buildAutoNumberField(),
+
+        // Exterior Facades
+        CustomTextField(
+          controller: _exteriorFacadesController,
+          label: 'الواجهات الخارجية',
+          hint: 'الواجهات الخارجية',
+        ),
         AppSpacing.verticalSpaceMD,
-        _buildHouseNumberField(),
-        AppSpacing.verticalSpaceMD,
-        _buildStreetCountField(),
-        AppSpacing.verticalSpaceMD,
-        _buildParkingCountField(),
-        AppSpacing.verticalSpaceMD,
-        _buildLandNotesField(),
-        AppSpacing.verticalSpaceMD,
-        _buildLandFacingField(),
-        AppSpacing.verticalSpaceMD,
-        _buildLandShapeField(),
+
+        // Maintenance Notes
+        CustomTextField(
+          controller: _maintenanceNotesController,
+          label: 'ملاحظات الصيانة',
+          hint: 'ملاحظات الصيانة',
+          maxLines: 3,
+        ),
       ],
-    );
-  }
-
-  Widget _buildTabletLayout() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(child: _buildGovernorateField()),
-            AppSpacing.horizontalSpaceMD,
-            Expanded(child: _buildAreaField()),
-          ],
-        ),
-        AppSpacing.verticalSpaceMD,
-        Row(
-          children: [
-            Expanded(child: _buildPlotNumberField()),
-            AppSpacing.horizontalSpaceMD,
-            Expanded(child: _buildParcelNumberField()),
-          ],
-        ),
-        AppSpacing.verticalSpaceMD,
-        Row(
-          children: [
-            Expanded(child: _buildPlanNumberField()),
-            AppSpacing.horizontalSpaceMD,
-            Expanded(child: _buildDocumentNumberField()),
-          ],
-        ),
-        AppSpacing.verticalSpaceMD,
-        Row(
-          children: [
-            Expanded(child: _buildDocumentDateField()),
-            AppSpacing.horizontalSpaceMD,
-            Expanded(child: _buildAreaSizeField()),
-          ],
-        ),
-        AppSpacing.verticalSpaceMD,
-        _buildPropertyTypeField(),
-        AppSpacing.verticalSpaceMD,
-        Row(
-          children: [
-            Expanded(child: _buildAutoNumberField()),
-            AppSpacing.horizontalSpaceMD,
-            Expanded(child: _buildHouseNumberField()),
-          ],
-        ),
-        AppSpacing.verticalSpaceMD,
-        Row(
-          children: [
-            Expanded(child: _buildStreetCountField()),
-            AppSpacing.horizontalSpaceMD,
-            Expanded(child: _buildParkingCountField()),
-          ],
-        ),
-        AppSpacing.verticalSpaceMD,
-        _buildLandNotesField(),
-        AppSpacing.verticalSpaceMD,
-        _buildLandFacingField(),
-        AppSpacing.verticalSpaceMD,
-        _buildLandShapeField(),
-      ],
-    );
-  }
-
-  Widget _buildDesktopLayout() {
-    return _buildTabletLayout();
-  }
-
-  // Field builders
-  Widget _buildGovernorateField() {
-    return CustomDropdown(
-      label: 'اسم المحافظة',
-      hint: 'اسم المحافظة',
-      value: _governorate,
-      items: DropdownOptions.governorates,
-      onChanged: (value) {
-        setState(() {
-          _governorate = value;
-        });
-      },
-    );
-  }
-
-  Widget _buildAreaField() {
-    return CustomTextField(
-      controller: _areaController,
-      label: 'اسم المنطقة',
-      hint: 'اسم المنطقة',
-    );
-  }
-
-  Widget _buildPlotNumberField() {
-    return CustomTextField(
-      controller: _plotNumberController,
-      label: 'رقم القطعة',
-      hint: 'رقم القطعة',
-    );
-  }
-
-  Widget _buildParcelNumberField() {
-    return CustomTextField(
-      controller: _parcelNumberController,
-      label: 'رقم القسيمة',
-      hint: 'رقم القسيمة',
-    );
-  }
-
-  Widget _buildPlanNumberField() {
-    return CustomTextField(
-      controller: _planNumberController,
-      label: 'رقم المخطط',
-      hint: 'رقم المخطط',
-    );
-  }
-
-  Widget _buildDocumentNumberField() {
-    return CustomTextField(
-      controller: _documentNumberController,
-      label: 'رقم الوثيقة',
-      hint: 'رقم الوثيقة',
-    );
-  }
-
-  Widget _buildDocumentDateField() {
-    return CustomDatePicker(
-      label: 'تاريخ الوثيقة',
-      value: _documentDate,
-      onChanged: (date) {
-        setState(() {
-          _documentDate = date;
-        });
-      },
-    );
-  }
-
-  Widget _buildAreaSizeField() {
-    return CustomTextField(
-      controller: _areaSizeController,
-      label: 'المساحة م²',
-      hint: 'المساحة م²',
-      keyboardType: TextInputType.number,
-    );
-  }
-
-  Widget _buildPropertyTypeField() {
-    return CustomDropdown(
-      label: 'نوع العقار',
-      hint: 'نوع العقار',
-      value: _propertyType,
-      items: DropdownOptions.propertyTypes,
-      onChanged: (value) {
-        setState(() {
-          _propertyType = value;
-        });
-      },
-    );
-  }
-
-  Widget _buildAutoNumberField() {
-    return CustomTextField(
-      controller: _autoNumberController,
-      label: 'الرقم الآلي',
-      hint: 'الرقم الآلي',
-    );
-  }
-
-  Widget _buildHouseNumberField() {
-    return CustomTextField(
-      controller: _houseNumberController,
-      label: 'رقم المنزل',
-      hint: 'رقم المنزل',
-    );
-  }
-
-  Widget _buildStreetCountField() {
-    return CustomTextField(
-      controller: _streetCountController,
-      label: 'عدد الشوارع',
-      hint: 'عدد الشوارع',
-      keyboardType: TextInputType.number,
-    );
-  }
-
-  Widget _buildParkingCountField() {
-    return CustomTextField(
-      controller: _parkingCountController,
-      label: 'مواقف السيارات',
-      hint: 'مواقف السيارات',
-      keyboardType: TextInputType.number,
-    );
-  }
-
-  Widget _buildLandNotesField() {
-    return CustomTextField(
-      controller: _landNotesController,
-      label: 'ملاحظات أرض العقار',
-      hint: 'ملاحظات أرض العقار',
-      maxLines: 3,
-    );
-  }
-
-  Widget _buildLandFacingField() {
-    return CustomTextField(
-      controller: _landFacingController,
-      label: 'اتجاه واجهة القسيمة',
-      hint: 'اتجاه واجهة القسيمة',
-    );
-  }
-
-  Widget _buildLandShapeField() {
-    return CustomTextField(
-      controller: _landShapeController,
-      label: 'شكل وتضاريس الأرض',
-      hint: 'شكل وتضاريس الأرض',
     );
   }
 }
