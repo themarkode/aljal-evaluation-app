@@ -186,22 +186,9 @@ class _Step1GeneralInfoScreenState
 
   @override
   Widget build(BuildContext context) {
-    // Watch the evaluation provider to reactively update form when data loads
-    final evaluation = ref.watch(evaluationNotifierProvider);
-    
-    // If we're editing and evaluation just loaded, update the form
-    if (widget.evaluationId != null && 
-        evaluation.evaluationId == widget.evaluationId) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && evaluation.generalInfo != null) {
-          // Only update if fields are empty (to avoid overwriting user input)
-          if (_clientNameController.text.isEmpty && 
-              _requestorNameController.text.isEmpty) {
-            _loadExistingData();
-          }
-        }
-      });
-    }
+    // Note: We use ref.read() here instead of ref.watch() because form data
+    // loading is handled in initState via _loadEvaluation(). Using watch()
+    // would cause unnecessary rebuilds and the postFrameCallback anti-pattern.
     
     return Directionality(
       textDirection: TextDirection.rtl,
