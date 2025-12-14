@@ -258,12 +258,15 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
     );
   }
 
-  List<EvaluationModel> _getFilteredEvaluations(List<EvaluationModel> evaluations) {
+  List<EvaluationModel> _getFilteredEvaluations(
+      List<EvaluationModel> evaluations) {
     switch (_statusFilter) {
       case StatusFilter.completed:
         return evaluations.where((e) => e.status == 'completed').toList();
       case StatusFilter.draft:
-        return evaluations.where((e) => e.status == 'draft' || e.status == null).toList();
+        return evaluations
+            .where((e) => e.status == 'draft' || e.status == null)
+            .toList();
       case StatusFilter.deleted:
         return evaluations.where((e) => e.status == 'deleted').toList();
       case StatusFilter.all:
@@ -434,9 +437,8 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
   Widget _buildMobileToolbar() {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
-      child: _isSearchExpanded
-          ? _buildExpandedSearch()
-          : _buildCollapsedToolbar(),
+      child:
+          _isSearchExpanded ? _buildExpandedSearch() : _buildCollapsedToolbar(),
     );
   }
 
@@ -466,7 +468,7 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
                   const SizedBox(width: 8),
                   Text(
                     'بحث...',
-            style: AppTypography.bodyMedium.copyWith(
+                    style: AppTypography.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -533,6 +535,10 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
                   color: AppColors.textSecondary,
                 ),
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
               ),
@@ -635,9 +641,7 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
                 : AppColors.background,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isActive
-                  ? (color ?? AppColors.primary)
-                  : AppColors.border,
+              color: isActive ? (color ?? AppColors.primary) : AppColors.border,
               width: isActive ? 1.5 : 1,
             ),
           ),
@@ -683,7 +687,8 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
               GestureDetector(
                 onTap: _onAddNew,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(
                     gradient: AppColors.primaryGradient,
                     borderRadius: BorderRadius.circular(12),
@@ -698,9 +703,10 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.add_rounded, color: Colors.white, size: 22),
+                      const Icon(Icons.add_rounded,
+                          color: Colors.white, size: 22),
                       const SizedBox(width: 8),
-          Text(
+                      Text(
                         'انشئ نموذج جديد',
                         style: AppTypography.labelMedium.copyWith(
                           color: Colors.white,
@@ -713,7 +719,7 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
               ),
               // Logo
               Container(
-            width: 60,
+                width: 60,
                 height: 60,
                 decoration: BoxDecoration(
                   color: AppColors.surface,
@@ -745,7 +751,8 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
             children: [
               // Reports count
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
@@ -761,7 +768,8 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(6),
@@ -769,7 +777,7 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
                       child: Text(
                         '$count',
                         style: AppTypography.labelSmall.copyWith(
-                  color: Colors.white,
+                          color: Colors.white,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -792,7 +800,8 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.search, color: AppColors.textSecondary, size: 22),
+                      Icon(Icons.search,
+                          color: AppColors.textSecondary, size: 22),
                       const SizedBox(width: 10),
                       Expanded(
                         child: TextField(
@@ -805,6 +814,10 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
                               color: AppColors.textSecondary,
                             ),
                             border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
                           ),
