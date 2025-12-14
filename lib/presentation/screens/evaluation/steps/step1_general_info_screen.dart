@@ -196,21 +196,40 @@ class _Step1GeneralInfoScreenState
           backgroundColor: AppColors.background,
           elevation: 0,
           automaticallyImplyLeading: false,
-          title: GestureDetector(
-            onTap: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              RouteNames.evaluationList,
-              (route) => false,
-            ),
-            child: Image.asset(
-              'assets/images/Al_Jal_Logo.png',
-              height: 40,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.business, size: 40);
-              },
-            ),
+          titleSpacing: 16,
+          title: Row(
+            children: [
+              // Step Navigation Dropdown
+              Expanded(
+                child: StepNavigationDropdown(
+                  currentStep: 1,
+                  evaluationId: widget.evaluationId,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Logo - clickable to go home
+              GestureDetector(
+                onTap: () => Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  RouteNames.evaluationList,
+                  (route) => false,
+                ),
+                child: Image.asset(
+                  'assets/images/Al_Jal_Logo.png',
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.business_rounded,
+                      color: AppColors.primary,
+                      size: 28,
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-          centerTitle: false,
         ),
         body: SafeArea(
           child: Form(
@@ -220,29 +239,17 @@ class _Step1GeneralInfoScreenState
                 Expanded(
                   child: SingleChildScrollView(
                     padding: AppSpacing.screenPaddingMobileInsets,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Step Navigation Dropdown
-                        StepNavigationDropdown(
-                          currentStep: 1,
-                          evaluationId: widget.evaluationId,
-                        ),
-                        const SizedBox(height: 20),
-                        // Form Content
-                        ResponsiveBuilder(
-                          builder: (context, deviceType) {
-                            switch (deviceType) {
-                              case DeviceType.mobile:
-                                return _buildMobileLayout();
-                              case DeviceType.tablet:
-                                return _buildTabletLayout();
-                              case DeviceType.desktop:
-                                return _buildDesktopLayout();
-                            }
-                          },
-                        ),
-                      ],
+                    child: ResponsiveBuilder(
+                      builder: (context, deviceType) {
+                        switch (deviceType) {
+                          case DeviceType.mobile:
+                            return _buildMobileLayout();
+                          case DeviceType.tablet:
+                            return _buildTabletLayout();
+                          case DeviceType.desktop:
+                            return _buildDesktopLayout();
+                        }
+                      },
                     ),
                   ),
                 ),

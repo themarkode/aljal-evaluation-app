@@ -30,8 +30,8 @@ const List<StepInfo> allSteps = [
   StepInfo(stepNumber: 9, title: 'بيانات إضافية', routeName: RouteNames.formStep9),
 ];
 
-/// A dropdown widget for navigating between form steps
-class StepNavigationDropdown extends StatefulWidget {
+/// A compact dropdown widget for navigating between form steps (for AppBar use)
+class StepNavigationDropdown extends StatelessWidget {
   final int currentStep;
   final String? evaluationId;
 
@@ -41,199 +41,139 @@ class StepNavigationDropdown extends StatefulWidget {
     this.evaluationId,
   });
 
-  @override
-  State<StepNavigationDropdown> createState() => _StepNavigationDropdownState();
-}
-
-class _StepNavigationDropdownState extends State<StepNavigationDropdown> {
-  bool _isExpanded = false;
-
-  void _toggleExpanded() {
-    setState(() {
-      _isExpanded = !_isExpanded;
-    });
-  }
-
-  void _navigateToStep(StepInfo step) {
-    if (step.stepNumber == widget.currentStep) {
-      // Already on this step, just close the dropdown
-      setState(() {
-        _isExpanded = false;
-      });
+  void _navigateToStep(BuildContext context, StepInfo step) {
+    if (step.stepNumber == currentStep) {
       return;
     }
 
-    // Navigate to the selected step
     Navigator.pushReplacementNamed(
       context,
       step.routeName,
       arguments: FormStepArguments.forStep(
         step: step.stepNumber,
-        evaluationId: widget.evaluationId,
+        evaluationId: evaluationId,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentStepInfo = allSteps[widget.currentStep - 1];
+    final currentStepInfo = allSteps[currentStep - 1];
 
-    return Column(
-      children: [
-        // Dropdown header button
-        GestureDetector(
-          onTap: _toggleExpanded,
+    return PopupMenuButton<StepInfo>(
+      offset: const Offset(0, 50),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      color: AppColors.surface,
+      elevation: 8,
+      onSelected: (step) => _navigateToStep(context, step),
+      itemBuilder: (context) => allSteps.map((step) {
+        final isCurrentStep = step.stepNumber == currentStep;
+        return PopupMenuItem<StepInfo>(
+          value: step,
           child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Current step title
-                Text(
-                  currentStepInfo.title,
-                  style: AppTypography.labelMedium.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+                // Step number circle
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: isCurrentStep ? AppColors.primary : AppColors.background,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isCurrentStep ? AppColors.primary : AppColors.border,
+                      width: 1.5,
+                    ),
                   ),
-                ),
-                // Expand/collapse icon
-                AnimatedRotation(
-                  turns: _isExpanded ? 0.5 : 0,
-                  duration: const Duration(milliseconds: 200),
-                  child: const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Dropdown list
-        AnimatedCrossFade(
-          firstChild: const SizedBox.shrink(),
-          secondChild: Container(
-            margin: const EdgeInsets.only(top: 8),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Column(
-                children: allSteps.map((step) {
-                  final isCurrentStep = step.stepNumber == widget.currentStep;
-                  
-                  return InkWell(
-                    onTap: () => _navigateToStep(step),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isCurrentStep
-                            ? AppColors.primary.withOpacity(0.1)
-                            : Colors.transparent,
-                        border: Border(
-                          bottom: step.stepNumber < allSteps.length
-                              ? BorderSide(
-                                  color: AppColors.border.withOpacity(0.5),
-                                  width: 1,
-                                )
-                              : BorderSide.none,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          // Step number circle
-                          Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: isCurrentStep
-                                  ? AppColors.primary
-                                  : AppColors.background,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isCurrentStep
-                                    ? AppColors.primary
-                                    : AppColors.border,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${step.stepNumber}',
-                                style: AppTypography.labelSmall.copyWith(
-                                  color: isCurrentStep
-                                      ? Colors.white
-                                      : AppColors.textSecondary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          // Step title
-                          Expanded(
-                            child: Text(
-                              step.title,
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: isCurrentStep
-                                    ? AppColors.primary
-                                    : AppColors.textPrimary,
-                                fontWeight: isCurrentStep
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                              ),
-                            ),
-                          ),
-                          // Check icon for current step
-                          if (isCurrentStep)
-                            Icon(
-                              Icons.check_circle_rounded,
-                              color: AppColors.primary,
-                              size: 20,
-                            ),
-                        ],
+                  child: Center(
+                    child: Text(
+                      '${step.stepNumber}',
+                      style: AppTypography.labelSmall.copyWith(
+                        color: isCurrentStep ? Colors.white : AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Step title
+                Expanded(
+                  child: Text(
+                    step.title,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: isCurrentStep ? AppColors.primary : AppColors.textPrimary,
+                      fontWeight: isCurrentStep ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ),
+                // Check icon for current step
+                if (isCurrentStep)
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+              ],
             ),
           ),
-          crossFadeState: _isExpanded
-              ? CrossFadeState.showSecond
-              : CrossFadeState.showFirst,
-          duration: const Duration(milliseconds: 200),
+        );
+      }).toList(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.25),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-      ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Step indicator
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  '$currentStep',
+                  style: AppTypography.labelSmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Current step title
+            Text(
+              currentStepInfo.title,
+              style: AppTypography.labelMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 6),
+            // Dropdown arrow
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
-

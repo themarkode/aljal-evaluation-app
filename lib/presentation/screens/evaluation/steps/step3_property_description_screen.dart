@@ -186,21 +186,38 @@ class _Step3PropertyDescriptionScreenState
           backgroundColor: AppColors.background,
           elevation: 0,
           automaticallyImplyLeading: false,
-          title: GestureDetector(
-            onTap: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              RouteNames.evaluationList,
-              (route) => false,
-            ),
-            child: Image.asset(
-              'assets/images/Al_Jal_Logo.png',
-              height: 40,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.business, size: 40);
-              },
-            ),
+          titleSpacing: 16,
+          title: Row(
+            children: [
+              Expanded(
+                child: StepNavigationDropdown(
+                  currentStep: 3,
+                  evaluationId: widget.evaluationId,
+                ),
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () => Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  RouteNames.evaluationList,
+                  (route) => false,
+                ),
+                child: Image.asset(
+                  'assets/images/Al_Jal_Logo.png',
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.business_rounded,
+                      color: AppColors.primary,
+                      size: 28,
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-          centerTitle: false,
         ),
         body: SafeArea(
           child: Form(
@@ -210,17 +227,7 @@ class _Step3PropertyDescriptionScreenState
                 Expanded(
                   child: SingleChildScrollView(
                     padding: AppSpacing.screenPaddingMobileInsets,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        StepNavigationDropdown(
-                          currentStep: 3,
-                          evaluationId: widget.evaluationId,
-                        ),
-                        const SizedBox(height: 20),
-                        _buildFormFields(),
-                      ],
-                    ),
+                    child: _buildFormFields(),
                   ),
                 ),
                 // Navigation buttons
