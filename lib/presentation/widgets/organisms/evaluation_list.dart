@@ -17,6 +17,7 @@ class EvaluationList extends StatelessWidget {
   final void Function(EvaluationModel)? onExport;
   final VoidCallback? onLoadMore;
   final bool hasMore;
+  final ScrollController? scrollController;
 
   const EvaluationList({
     super.key,
@@ -29,6 +30,7 @@ class EvaluationList extends StatelessWidget {
     this.onExport,
     this.onLoadMore,
     this.hasMore = false,
+    this.scrollController,
   });
 
   @override
@@ -62,6 +64,7 @@ class EvaluationList extends StatelessWidget {
 
   Widget _buildListView() {
     return ListView.separated(
+      controller: scrollController,
       padding: AppSpacing.allMD,
       itemCount: evaluations.length + (hasMore ? 1 : 0),
       separatorBuilder: (context, index) => AppSpacing.verticalSpaceSM,
@@ -98,6 +101,7 @@ class EvaluationList extends StatelessWidget {
     }
 
     return GridView.builder(
+      controller: scrollController,
       padding: AppSpacing.allMD,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
