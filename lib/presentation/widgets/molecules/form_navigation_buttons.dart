@@ -90,10 +90,18 @@ class FormNavigationButtons extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Arrow icon FIRST (on RIGHT in RTL visual)
+              if (!isLoading)
+                const Icon(
+                  Icons.arrow_back_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              if (!isLoading) const SizedBox(width: 10),
               // Text or loading indicator
               if (isLoading)
                 const SizedBox(
@@ -116,14 +124,6 @@ class FormNavigationButtons extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                 ),
-              // Arrow icon (pointing left in RTL for "forward/next")
-              if (!isLoading) const SizedBox(width: 8),
-              if (!isLoading)
-                const Icon(
-                  Icons.arrow_back_rounded, // Flipped: use back arrow for RTL "next"
-                  color: Colors.white,
-                  size: 20,
-                ),
             ],
           ),
         ),
@@ -139,7 +139,7 @@ class FormNavigationButtons extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
@@ -150,14 +150,7 @@ class FormNavigationButtons extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Arrow/X icon first (on the right in RTL)
-              Icon(
-                _isFirstStep ? Icons.close_rounded : Icons.arrow_forward_rounded, // Flipped: use forward arrow for RTL "back"
-                color: _isFirstStep ? AppColors.textSecondary : AppColors.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              // Text
+              // Text FIRST (on RIGHT in RTL visual)
               Flexible(
                 child: Text(
                   _previousButtonText,
@@ -168,6 +161,13 @@ class FormNavigationButtons extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                 ),
+              ),
+              const SizedBox(width: 10),
+              // Arrow/X icon LAST (on LEFT in RTL visual)
+              Icon(
+                _isFirstStep ? Icons.close_rounded : Icons.arrow_forward_rounded,
+                color: _isFirstStep ? AppColors.textSecondary : AppColors.primary,
+                size: 20,
               ),
             ],
           ),

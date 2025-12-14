@@ -196,27 +196,16 @@ class _Step1GeneralInfoScreenState
           backgroundColor: AppColors.background,
           elevation: 0,
           centerTitle: true,
-          // Back arrow on LEFT
-          leading: IconButton(
-            icon: Icon(
-              Icons.arrow_forward_rounded, // Forward arrow for RTL "back"
-              color: AppColors.primary,
+          leadingWidth: 70,
+          // Logo on LEFT
+          leading: GestureDetector(
+            onTap: () => Navigator.pushNamedAndRemoveUntil(
+              context,
+              RouteNames.evaluationList,
+              (route) => false,
             ),
-            onPressed: _cancel,
-          ),
-          // Dropdown in CENTER
-          title: StepNavigationDropdown(
-            currentStep: 1,
-            evaluationId: widget.evaluationId,
-          ),
-          // Logo on RIGHT
-          actions: [
-            GestureDetector(
-              onTap: () => Navigator.pushNamedAndRemoveUntil(
-                context,
-                RouteNames.evaluationList,
-                (route) => false,
-              ),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16),
               child: Image.asset(
                 'assets/images/Al_Jal_Logo.png',
                 width: 50,
@@ -231,7 +220,22 @@ class _Step1GeneralInfoScreenState
                 },
               ),
             ),
-            const SizedBox(width: 16),
+          ),
+          // Dropdown in CENTER with more space
+          title: StepNavigationDropdown(
+            currentStep: 1,
+            evaluationId: widget.evaluationId,
+          ),
+          // Back arrow on RIGHT
+          actions: [
+            IconButton(
+              icon: Icon(
+                Icons.arrow_forward_rounded,
+                color: AppColors.primary,
+              ),
+              onPressed: _cancel,
+            ),
+            const SizedBox(width: 8),
           ],
         ),
         body: SafeArea(

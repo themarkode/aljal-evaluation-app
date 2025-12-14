@@ -129,21 +129,15 @@ class _Step7SitePlansScreenState extends ConsumerState<Step7SitePlansScreen> {
           backgroundColor: AppColors.background,
           elevation: 0,
           centerTitle: true,
-          leading: IconButton(
-            icon: Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
-            onPressed: _goBack,
-          ),
-          title: StepNavigationDropdown(
-            currentStep: 7,
-            evaluationId: widget.evaluationId,
-          ),
-          actions: [
-            GestureDetector(
-              onTap: () => Navigator.pushNamedAndRemoveUntil(
-                context,
-                RouteNames.evaluationList,
-                (route) => false,
-              ),
+          leadingWidth: 70,
+          leading: GestureDetector(
+            onTap: () => Navigator.pushNamedAndRemoveUntil(
+              context,
+              RouteNames.evaluationList,
+              (route) => false,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16),
               child: Image.asset(
                 'assets/images/Al_Jal_Logo.png',
                 width: 50,
@@ -158,7 +152,17 @@ class _Step7SitePlansScreenState extends ConsumerState<Step7SitePlansScreen> {
                 },
               ),
             ),
-            const SizedBox(width: 16),
+          ),
+          title: StepNavigationDropdown(
+            currentStep: 7,
+            evaluationId: widget.evaluationId,
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
+              onPressed: _goBack,
+            ),
+            const SizedBox(width: 8),
           ],
         ),
         body: SafeArea(
