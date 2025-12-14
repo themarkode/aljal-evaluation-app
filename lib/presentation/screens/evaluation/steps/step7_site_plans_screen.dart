@@ -128,39 +128,38 @@ class _Step7SitePlansScreenState extends ConsumerState<Step7SitePlansScreen> {
         appBar: AppBar(
           backgroundColor: AppColors.background,
           elevation: 0,
-          automaticallyImplyLeading: false,
-          titleSpacing: 16,
-          title: Row(
-            children: [
-              Expanded(
-                child: StepNavigationDropdown(
-                  currentStep: 7,
-                  evaluationId: widget.evaluationId,
-                ),
-              ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () => Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  RouteNames.evaluationList,
-                  (route) => false,
-                ),
-                child: Image.asset(
-                  'assets/images/Al_Jal_Logo.png',
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.business_rounded,
-                      color: AppColors.primary,
-                      size: 28,
-                    );
-                  },
-                ),
-              ),
-            ],
+          centerTitle: true,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
+            onPressed: _goBack,
           ),
+          title: StepNavigationDropdown(
+            currentStep: 7,
+            evaluationId: widget.evaluationId,
+          ),
+          actions: [
+            GestureDetector(
+              onTap: () => Navigator.pushNamedAndRemoveUntil(
+                context,
+                RouteNames.evaluationList,
+                (route) => false,
+              ),
+              child: Image.asset(
+                'assets/images/Al_Jal_Logo.png',
+                width: 50,
+                height: 50,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.business_rounded,
+                    color: AppColors.primary,
+                    size: 28,
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+          ],
         ),
         body: SafeArea(
           child: Form(

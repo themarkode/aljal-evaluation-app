@@ -195,41 +195,44 @@ class _Step1GeneralInfoScreenState
         appBar: AppBar(
           backgroundColor: AppColors.background,
           elevation: 0,
-          automaticallyImplyLeading: false,
-          titleSpacing: 16,
-          title: Row(
-            children: [
-              // Step Navigation Dropdown
-              Expanded(
-                child: StepNavigationDropdown(
-                  currentStep: 1,
-                  evaluationId: widget.evaluationId,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Logo - clickable to go home
-              GestureDetector(
-                onTap: () => Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  RouteNames.evaluationList,
-                  (route) => false,
-                ),
-                child: Image.asset(
-                  'assets/images/Al_Jal_Logo.png',
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.business_rounded,
-                      color: AppColors.primary,
-                      size: 28,
-                    );
-                  },
-                ),
-              ),
-            ],
+          centerTitle: true,
+          // Back arrow on LEFT
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_forward_rounded, // Forward arrow for RTL "back"
+              color: AppColors.primary,
+            ),
+            onPressed: _cancel,
           ),
+          // Dropdown in CENTER
+          title: StepNavigationDropdown(
+            currentStep: 1,
+            evaluationId: widget.evaluationId,
+          ),
+          // Logo on RIGHT
+          actions: [
+            GestureDetector(
+              onTap: () => Navigator.pushNamedAndRemoveUntil(
+                context,
+                RouteNames.evaluationList,
+                (route) => false,
+              ),
+              child: Image.asset(
+                'assets/images/Al_Jal_Logo.png',
+                width: 50,
+                height: 50,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.business_rounded,
+                    color: AppColors.primary,
+                    size: 28,
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+          ],
         ),
         body: SafeArea(
           child: Form(

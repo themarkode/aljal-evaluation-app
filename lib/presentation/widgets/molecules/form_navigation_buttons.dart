@@ -94,14 +94,6 @@ class FormNavigationButtons extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Arrow icon (pointing right for "next")
-              if (!isLoading)
-                const Icon(
-                  Icons.arrow_forward_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              if (!isLoading) const SizedBox(width: 8),
               // Text or loading indicator
               if (isLoading)
                 const SizedBox(
@@ -123,6 +115,14 @@ class FormNavigationButtons extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                   ),
+                ),
+              // Arrow icon (pointing left in RTL for "forward/next")
+              if (!isLoading) const SizedBox(width: 8),
+              if (!isLoading)
+                const Icon(
+                  Icons.arrow_back_rounded, // Flipped: use back arrow for RTL "next"
+                  color: Colors.white,
+                  size: 20,
                 ),
             ],
           ),
@@ -150,6 +150,13 @@ class FormNavigationButtons extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Arrow/X icon first (on the right in RTL)
+              Icon(
+                _isFirstStep ? Icons.close_rounded : Icons.arrow_forward_rounded, // Flipped: use forward arrow for RTL "back"
+                color: _isFirstStep ? AppColors.textSecondary : AppColors.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
               // Text
               Flexible(
                 child: Text(
@@ -161,13 +168,6 @@ class FormNavigationButtons extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                 ),
-              ),
-              const SizedBox(width: 8),
-              // X icon for cancel, arrow for back
-              Icon(
-                _isFirstStep ? Icons.close_rounded : Icons.arrow_back_rounded,
-                color: _isFirstStep ? AppColors.textSecondary : AppColors.primary,
-                size: 20,
               ),
             ],
           ),

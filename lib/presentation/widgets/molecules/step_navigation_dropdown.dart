@@ -137,6 +137,13 @@ class StepNavigationDropdown extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Dropdown arrow (on LEFT side with space)
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+            const SizedBox(width: 10), // More space between arrow and text
             // Step indicator
             Container(
               width: 24,
@@ -163,13 +170,6 @@ class StepNavigationDropdown extends StatelessWidget {
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
               ),
-            ),
-            const SizedBox(width: 6),
-            // Dropdown arrow
-            const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: Colors.white,
-              size: 20,
             ),
           ],
         ),
