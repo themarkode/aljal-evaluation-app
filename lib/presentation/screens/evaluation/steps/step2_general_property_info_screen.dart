@@ -229,12 +229,19 @@ class _Step2GeneralPropertyInfoScreenState
                 'معلومات عامة للعقار',
                 style: AppTypography.heading,
               ),
-              Image.asset(
-                'assets/images/Al_Jal_Logo.png',
-                height: 40,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(Icons.business, size: 40);
-                },
+              GestureDetector(
+                onTap: () => Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  RouteNames.evaluationList,
+                  (route) => false,
+                ),
+                child: Image.asset(
+                  'assets/images/Al_Jal_Logo.png',
+                  height: 40,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.business, size: 40);
+                  },
+                ),
               ),
             ],
           ),

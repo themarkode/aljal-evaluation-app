@@ -389,22 +389,19 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
                   ),
                 ],
               ),
-              // Logo (no border)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  'assets/images/Al_Jal_Logo.png',
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.business_rounded,
-                      color: AppColors.primary,
-                      size: 28,
-                    );
-                  },
-                ),
+              // Logo (full corners, no clipping)
+              Image.asset(
+                'assets/images/Al_Jal_Logo.png',
+                width: 50,
+                height: 50,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.business_rounded,
+                    color: AppColors.primary,
+                    size: 28,
+                  );
+                },
               ),
             ],
           ),
@@ -707,22 +704,19 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
                   ),
                 ),
               ),
-              // Logo (no border)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: Image.asset(
-                  'assets/images/Al_Jal_Logo.png',
-                  width: 60,
-                  height: 60,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.business_rounded,
-                      color: AppColors.primary,
-                      size: 32,
-                    );
-                  },
-                ),
+              // Logo (full corners, no clipping)
+              Image.asset(
+                'assets/images/Al_Jal_Logo.png',
+                width: 60,
+                height: 60,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.business_rounded,
+                    color: AppColors.primary,
+                    size: 32,
+                  );
+                },
               ),
             ],
           ),
