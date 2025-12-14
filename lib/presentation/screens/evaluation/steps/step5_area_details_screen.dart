@@ -211,25 +211,10 @@ class _Step5AreaDetailsScreenState
                   ),
                 ),
                 // Navigation buttons
-                Container(
-                  padding: AppSpacing.screenPaddingMobileInsets,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: FormNavigationButtons(
-                    onNext: _saveAndContinue,
-                    onPrevious: _goBack,
-                    nextText: 'ملاحظات الدخل',
-                    previousText: 'الوصف العام للعقار',
-                    showPrevious: true,
-                  ),
+                FormNavigationButtons(
+                  currentStep: 5,
+                  onNext: _saveAndContinue,
+                  onPrevious: _goBack,
                 ),
               ],
             ),

@@ -208,25 +208,10 @@ class _Step4FloorsScreenState extends ConsumerState<Step4FloorsScreen> {
                   ),
                 ),
                 // Navigation buttons
-                Container(
-                  padding: AppSpacing.screenPaddingMobileInsets,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: FormNavigationButtons(
-                    onNext: _saveAndContinue,
-                    onPrevious: _goBack,
-                    nextText: 'تفاصيل المنطقة المحيطه بالعقار',
-                    previousText: 'وصف العقار',
-                    showPrevious: true,
-                  ),
+                FormNavigationButtons(
+                  currentStep: 4,
+                  onNext: _saveAndContinue,
+                  onPrevious: _goBack,
                 ),
               ],
             ),

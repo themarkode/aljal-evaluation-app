@@ -277,25 +277,10 @@ class _Step2GeneralPropertyInfoScreenState
                   ),
                 ),
                 // Navigation buttons
-                Container(
-                  padding: AppSpacing.screenPaddingMobileInsets,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: FormNavigationButtons(
-                    onNext: _saveAndContinue,
-                    onPrevious: _goBack,
-                    nextText: 'وصف العقار',
-                    previousText: 'معلومات عامة',
-                    showPrevious: true,
-                  ),
+                FormNavigationButtons(
+                  currentStep: 2,
+                  onNext: _saveAndContinue,
+                  onPrevious: _goBack,
                 ),
               ],
             ),

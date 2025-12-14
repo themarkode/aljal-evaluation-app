@@ -231,25 +231,10 @@ class _Step3PropertyDescriptionScreenState
                   ),
                 ),
                 // Navigation buttons
-                Container(
-                  padding: AppSpacing.screenPaddingMobileInsets,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: FormNavigationButtons(
-                    onNext: _saveAndContinue,
-                    onPrevious: _goBack,
-                    nextText: 'الطوابق',
-                    previousText: 'معلومات عامة للعقار',
-                    showPrevious: true,
-                  ),
+                FormNavigationButtons(
+                  currentStep: 3,
+                  onNext: _saveAndContinue,
+                  onPrevious: _goBack,
                 ),
               ],
             ),

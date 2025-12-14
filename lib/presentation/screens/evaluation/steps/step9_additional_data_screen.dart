@@ -254,25 +254,10 @@ class _Step9AdditionalDataScreenState
                   ),
                 ),
                 // Navigation buttons
-                Container(
-                  padding: AppSpacing.screenPaddingMobileInsets,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: FormNavigationButtons(
-                    onNext: _saveAndComplete,
-                    onPrevious: _goBack,
-                    nextText: 'حفظ النموذج',
-                    previousText: 'صور وموقع العقار',
-                    showPrevious: true,
-                  ),
+                FormNavigationButtons(
+                  currentStep: 9,
+                  onNext: _saveAndComplete,
+                  onPrevious: _goBack,
                 ),
               ],
             ),

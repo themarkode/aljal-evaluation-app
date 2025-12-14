@@ -185,25 +185,10 @@ class _Step7SitePlansScreenState extends ConsumerState<Step7SitePlansScreen> {
                   ),
                 ),
                 // Navigation buttons
-                Container(
-                  padding: AppSpacing.screenPaddingMobileInsets,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: FormNavigationButtons(
-                    onNext: _saveAndContinue,
-                    onPrevious: _goBack,
-                    nextText: 'صور وموقع العقار',
-                    previousText: 'ملاحظات الدخل',
-                    showPrevious: true,
-                  ),
+                FormNavigationButtons(
+                  currentStep: 7,
+                  onNext: _saveAndContinue,
+                  onPrevious: _goBack,
                 ),
               ],
             ),

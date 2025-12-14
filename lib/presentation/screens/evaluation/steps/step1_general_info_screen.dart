@@ -254,25 +254,10 @@ class _Step1GeneralInfoScreenState
                   ),
                 ),
                 // Navigation buttons
-                Container(
-                  padding: AppSpacing.screenPaddingMobileInsets,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: FormNavigationButtons(
-                    onNext: _saveAndContinue,
-                    onPrevious: _cancel,
-                    nextText: 'معلومات عامة للعقار',
-                    previousText: 'إلغاء',
-                    showPrevious: true,
-                  ),
+                FormNavigationButtons(
+                  currentStep: 1,
+                  onNext: _saveAndContinue,
+                  onPrevious: _cancel,
                 ),
               ],
             ),
