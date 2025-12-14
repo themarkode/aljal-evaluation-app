@@ -9,8 +9,8 @@ import 'package:aljal_evaluation/core/routing/route_names.dart';
 import 'package:aljal_evaluation/core/routing/route_arguments.dart';
 import 'package:aljal_evaluation/presentation/providers/evaluation_provider.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_text_field.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/collapsible_section.dart';
 import 'package:aljal_evaluation/presentation/widgets/molecules/form_navigation_buttons.dart';
+import 'package:aljal_evaluation/presentation/widgets/molecules/step_navigation_dropdown.dart';
 import 'package:aljal_evaluation/data/models/pages_models/image_model.dart';
 import 'package:aljal_evaluation/data/services/image_service.dart';
 
@@ -322,29 +322,21 @@ class _Step8PropertyImagesScreenState
           backgroundColor: AppColors.background,
           elevation: 0,
           automaticallyImplyLeading: false,
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'صور وموقع العقار',
-                style: AppTypography.heading,
-              ),
-              GestureDetector(
-                onTap: () => Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  RouteNames.evaluationList,
-                  (route) => false,
-                ),
-                child: Image.asset(
-                  'assets/images/Al_Jal_Logo.png',
-                  height: 40,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.business, size: 40);
-                  },
-                ),
-              ),
-            ],
+          title: GestureDetector(
+            onTap: () => Navigator.pushNamedAndRemoveUntil(
+              context,
+              RouteNames.evaluationList,
+              (route) => false,
+            ),
+            child: Image.asset(
+              'assets/images/Al_Jal_Logo.png',
+              height: 40,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(Icons.business, size: 40);
+              },
+            ),
           ),
+          centerTitle: false,
         ),
         body: SafeArea(
           child: Form(
@@ -354,12 +346,15 @@ class _Step8PropertyImagesScreenState
                 Expanded(
                   child: SingleChildScrollView(
                     padding: AppSpacing.screenPaddingMobileInsets,
-                    child: CollapsibleSection(
-                      title: 'صور وموقع العقار',
-                      initiallyExpanded: true,
-                      child: Column(
-                        children: [
-                          _buildImagePickerWidget(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        StepNavigationDropdown(
+                          currentStep: 8,
+                          evaluationId: widget.evaluationId,
+                        ),
+                        const SizedBox(height: 20),
+                        _buildImagePickerWidget(
                             label:
                                 'صور لموقع العقار حسب المخطط العام لبلدية الكويت',
                             imageUrl: _propertyLocationMapImageUrl,
@@ -469,8 +464,7 @@ class _Step8PropertyImagesScreenState
                                   _progressCivilPlotMap = progress,
                             ),
                           ),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
                 ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aljal_evaluation/core/theme/app_colors.dart';
-import 'package:aljal_evaluation/core/theme/app_typography.dart';
 import 'package:aljal_evaluation/core/theme/app_spacing.dart';
 import 'package:aljal_evaluation/core/routing/route_names.dart';
 import 'package:aljal_evaluation/core/routing/route_arguments.dart';
@@ -10,8 +9,8 @@ import 'package:aljal_evaluation/presentation/providers/evaluation_provider.dart
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_text_field.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_dropdown.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_date_picker.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/collapsible_section.dart';
 import 'package:aljal_evaluation/presentation/widgets/molecules/form_navigation_buttons.dart';
+import 'package:aljal_evaluation/presentation/widgets/molecules/step_navigation_dropdown.dart';
 import 'package:aljal_evaluation/data/models/pages_models/general_property_info_model.dart';
 import 'package:aljal_evaluation/presentation/shared/responsive/responsive_builder.dart';
 
@@ -222,29 +221,21 @@ class _Step2GeneralPropertyInfoScreenState
           backgroundColor: AppColors.background,
           elevation: 0,
           automaticallyImplyLeading: false,
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'معلومات عامة للعقار',
-                style: AppTypography.heading,
-              ),
-              GestureDetector(
-                onTap: () => Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  RouteNames.evaluationList,
-                  (route) => false,
-                ),
-                child: Image.asset(
-                  'assets/images/Al_Jal_Logo.png',
-                  height: 40,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.business, size: 40);
-                  },
-                ),
-              ),
-            ],
+          title: GestureDetector(
+            onTap: () => Navigator.pushNamedAndRemoveUntil(
+              context,
+              RouteNames.evaluationList,
+              (route) => false,
+            ),
+            child: Image.asset(
+              'assets/images/Al_Jal_Logo.png',
+              height: 40,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(Icons.business, size: 40);
+              },
+            ),
           ),
+          centerTitle: false,
         ),
         body: SafeArea(
           child: Form(
@@ -254,21 +245,27 @@ class _Step2GeneralPropertyInfoScreenState
                 Expanded(
                   child: SingleChildScrollView(
                     padding: AppSpacing.screenPaddingMobileInsets,
-                    child: CollapsibleSection(
-                      title: 'معلومات عامة للعقار',
-                      initiallyExpanded: true,
-                      child: ResponsiveBuilder(
-                        builder: (context, deviceType) {
-                          switch (deviceType) {
-                            case DeviceType.mobile:
-                              return _buildMobileLayout();
-                            case DeviceType.tablet:
-                              return _buildTabletLayout();
-                            case DeviceType.desktop:
-                              return _buildDesktopLayout();
-                          }
-                        },
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        StepNavigationDropdown(
+                          currentStep: 2,
+                          evaluationId: widget.evaluationId,
+                        ),
+                        const SizedBox(height: 20),
+                        ResponsiveBuilder(
+                          builder: (context, deviceType) {
+                            switch (deviceType) {
+                              case DeviceType.mobile:
+                                return _buildMobileLayout();
+                              case DeviceType.tablet:
+                                return _buildTabletLayout();
+                              case DeviceType.desktop:
+                                return _buildDesktopLayout();
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ),
