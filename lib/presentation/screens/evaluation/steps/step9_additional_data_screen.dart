@@ -206,7 +206,7 @@ class _Step9AdditionalDataScreenState
                 style: AppTypography.heading,
               ),
               Image.asset(
-                'assets/images/logo.png',
+                'assets/images/Al_Jal_Logo.png',
                 height: 40,
                 errorBuilder: (context, error, stackTrace) {
                   return const Icon(Icons.business, size: 40);

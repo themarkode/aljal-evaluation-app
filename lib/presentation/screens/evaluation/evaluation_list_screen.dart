@@ -389,31 +389,21 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
                   ),
                 ],
               ),
-              // Logo
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.border,
-                    width: 1,
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(11),
-                  child: Image.asset(
-                    'assets/images/Al_Jal_Logo.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
-                        Icons.business_rounded,
-                        color: AppColors.primary,
-                        size: 28,
-                      );
-                    },
-                  ),
+              // Logo (no border)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  'assets/images/Al_Jal_Logo.png',
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.business_rounded,
+                      color: AppColors.primary,
+                      size: 28,
+                    );
+                  },
                 ),
               ),
             ],
@@ -717,28 +707,21 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
                   ),
                 ),
               ),
-              // Logo
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border, width: 1),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(13),
-                  child: Image.asset(
-                    'assets/images/Al_Jal_Logo.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
-                        Icons.business_rounded,
-                        color: AppColors.primary,
-                        size: 32,
-                      );
-                    },
-                  ),
+              // Logo (no border)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Image.asset(
+                  'assets/images/Al_Jal_Logo.png',
+                  width: 60,
+                  height: 60,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.business_rounded,
+                      color: AppColors.primary,
+                      size: 32,
+                    );
+                  },
                 ),
               ),
             ],

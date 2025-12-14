@@ -230,7 +230,7 @@ class _Step2GeneralPropertyInfoScreenState
                 style: AppTypography.heading,
               ),
               Image.asset(
-                'assets/images/logo.png',
+                'assets/images/Al_Jal_Logo.png',
                 height: 40,
                 errorBuilder: (context, error, stackTrace) {
                   return const Icon(Icons.business, size: 40);
