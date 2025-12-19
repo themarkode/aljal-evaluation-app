@@ -73,11 +73,9 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
       }
     });
 
-    // Load evaluations on screen init
+    // Start real-time sync for automatic updates across devices
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(evaluationListNotifierProvider.notifier)
-          .loadEvaluations(refresh: true);
+      ref.read(evaluationListNotifierProvider.notifier).startRealtimeSync();
     });
   }
 
@@ -102,6 +100,8 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
 
   @override
   void dispose() {
+    // Stop real-time sync when leaving the screen
+    ref.read(evaluationListNotifierProvider.notifier).stopRealtimeSync();
     _scrollController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();

@@ -225,4 +225,49 @@ class EvaluationService {
       throw Exception('Failed to delete multiple evaluations: $e');
     }
   }
+
+  /// Real-time stream of all evaluations
+  /// This enables automatic sync across devices
+  Stream<List<EvaluationModel>> watchEvaluations({int limit = 50}) {
+    return _collection
+        .orderBy('updatedAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['evaluationId'] = doc.id;
+        return EvaluationModel.fromJson(data);
+      }).toList();
+    });
+  }
+
+  /// Real-time stream of evaluations filtered by status
+  Stream<List<EvaluationModel>> watchEvaluationsByStatus({
+    required String status,
+    int limit = 50,
+  }) {
+    return _collection
+        .where('status', isEqualTo: status)
+        .orderBy('updatedAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['evaluationId'] = doc.id;
+        return EvaluationModel.fromJson(data);
+      }).toList();
+    });
+  }
+
+  /// Real-time stream for a single evaluation
+  Stream<EvaluationModel?> watchEvaluation(String evaluationId) {
+    return _collection.doc(evaluationId).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      final data = doc.data()!;
+      data['evaluationId'] = doc.id;
+      return EvaluationModel.fromJson(data);
+    });
+  }
 }

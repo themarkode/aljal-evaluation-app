@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:aljal_evaluation/data/models/evaluation_model.dart';
@@ -5,17 +6,23 @@ import 'package:aljal_evaluation/data/services/evaluation_service.dart';
 
 part 'evaluation_list_provider.g.dart';
 
-// Provider for managing the list of evaluations
+// Provider for managing the list of evaluations with real-time sync
 @riverpod
 class EvaluationListNotifier extends _$EvaluationListNotifier {
   late final EvaluationService _evaluationService;
+  StreamSubscription<List<EvaluationModel>>? _subscription;
   DocumentSnapshot? _lastDocument;
   bool _hasMore = true;
   
   @override
   EvaluationListState build() {
     _evaluationService = EvaluationService();
-    // Don't load here - let the screen trigger the load
+    
+    // Cancel subscription when provider is disposed
+    ref.onDispose(() {
+      _subscription?.cancel();
+    });
+    
     return EvaluationListState(
       evaluations: [],
       isLoading: false,
@@ -25,7 +32,46 @@ class EvaluationListNotifier extends _$EvaluationListNotifier {
     );
   }
   
-  // Load evaluations with pagination
+  /// Start listening to real-time updates from Firestore
+  /// This enables automatic sync across devices
+  void startRealtimeSync() {
+    // Cancel any existing subscription
+    _subscription?.cancel();
+    
+    state = state.copyWith(isLoading: true);
+    
+    // Listen to real-time updates based on current filter
+    final stream = state.selectedFilter == EvaluationFilter.all
+        ? _evaluationService.watchEvaluations(limit: 50)
+        : _evaluationService.watchEvaluationsByStatus(
+            status: _getStatusFromFilter(state.selectedFilter),
+            limit: 50,
+          );
+    
+    _subscription = stream.listen(
+      (evaluations) {
+        state = state.copyWith(
+          evaluations: evaluations,
+          isLoading: false,
+          hasMore: evaluations.length >= 50,
+        );
+      },
+      onError: (error) {
+        state = state.copyWith(
+          isLoading: false,
+          error: error.toString(),
+        );
+      },
+    );
+  }
+  
+  /// Stop real-time sync (useful when leaving the screen)
+  void stopRealtimeSync() {
+    _subscription?.cancel();
+    _subscription = null;
+  }
+  
+  // Load evaluations with pagination (one-time fetch, used for initial load or manual refresh)
   Future<void> loadEvaluations({bool refresh = false}) async {
     if (refresh) {
       _lastDocument = null;
@@ -69,10 +115,14 @@ class EvaluationListNotifier extends _$EvaluationListNotifier {
   
   // Search evaluations by client name
   Future<void> searchByClient(String query) async {
+    // Stop real-time sync during search
+    stopRealtimeSync();
+    
     state = state.copyWith(searchQuery: query, isLoading: true);
     
     if (query.isEmpty) {
-      await loadEvaluations(refresh: true);
+      // Resume real-time sync when search is cleared
+      startRealtimeSync();
       return;
     }
     
@@ -115,6 +165,9 @@ class EvaluationListNotifier extends _$EvaluationListNotifier {
   
   // Filter by date range
   Future<void> filterByDateRange(DateTime start, DateTime end) async {
+    // Stop real-time sync during date filter
+    stopRealtimeSync();
+    
     state = state.copyWith(isLoading: true);
     
     try {
@@ -140,7 +193,8 @@ class EvaluationListNotifier extends _$EvaluationListNotifier {
     try {
       await _evaluationService.deleteEvaluation(evaluationId);
       
-      // Remove from local state
+      // With real-time sync, the list will auto-update
+      // But we can optimistically remove it for better UX
       final updatedList = state.evaluations
           .where((e) => e.evaluationId != evaluationId)
           .toList();
@@ -156,12 +210,12 @@ class EvaluationListNotifier extends _$EvaluationListNotifier {
     try {
       await _evaluationService.deleteMultipleEvaluations(evaluationIds);
       
-      // Remove from local state
+      // Optimistically remove from local state
       final updatedList = state.evaluations
           .where((e) => !evaluationIds.contains(e.evaluationId))
           .toList();
       
-      state = state.copyWith(evaluations: updatedList);
+      state = state.copyWith(evaluations: updatedList, selectedIds: {});
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -185,21 +239,12 @@ class EvaluationListNotifier extends _$EvaluationListNotifier {
     state = state.copyWith(selectedIds: {});
   }
   
-  // Apply filter
+  // Apply filter with real-time sync
   void applyFilter(EvaluationFilter filter) {
-    state = state.copyWith(selectedFilter: filter);
+    state = state.copyWith(selectedFilter: filter, searchQuery: '');
     
-    switch (filter) {
-      case EvaluationFilter.all:
-        loadEvaluations(refresh: true);
-        break;
-      case EvaluationFilter.draft:
-        filterByStatus('draft');
-        break;
-      case EvaluationFilter.completed:
-        filterByStatus('completed');
-        break;
-    }
+    // Restart real-time sync with new filter
+    startRealtimeSync();
   }
   
   // Helper method
@@ -211,6 +256,17 @@ class EvaluationListNotifier extends _$EvaluationListNotifier {
         return EvaluationFilter.completed;
       default:
         return EvaluationFilter.all;
+    }
+  }
+  
+  String _getStatusFromFilter(EvaluationFilter filter) {
+    switch (filter) {
+      case EvaluationFilter.draft:
+        return 'draft';
+      case EvaluationFilter.completed:
+        return 'completed';
+      case EvaluationFilter.all:
+        return '';
     }
   }
 }
@@ -262,5 +318,3 @@ enum EvaluationFilter {
   draft,
   completed,
 }
-
-
