@@ -3,6 +3,8 @@ import 'route_names.dart';
 import 'route_arguments.dart';
 
 // Import screens
+import 'package:aljal_evaluation/presentation/screens/auth/splash_screen.dart';
+import 'package:aljal_evaluation/presentation/screens/auth/login_screen.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/evaluation_list_screen.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step1_general_info_screen.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step2_general_property_info_screen.dart';
@@ -13,7 +15,10 @@ import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step6_inc
 import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step7_site_plans_screen.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step8_property_images_screen.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step9_additional_data_screen.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step10_building_land_cost_screen.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step11_economic_income_screen.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/view_evaluation_screen.dart';
+import 'package:aljal_evaluation/presentation/screens/statistics/statistics_screen.dart';
 
 /// App router - handles all route generation
 class AppRouter {
@@ -26,10 +31,25 @@ class AppRouter {
 
     switch (routeName) {
       // ========================================
-      // MAIN ROUTES
+      // AUTH ROUTES
       // ========================================
 
       case RouteNames.initial:
+        return _buildRoute(
+          const SplashScreen(),
+          settings: settings,
+        );
+
+      case RouteNames.login:
+        return _buildRoute(
+          const LoginScreen(),
+          settings: settings,
+        );
+
+      // ========================================
+      // MAIN ROUTES
+      // ========================================
+
       case RouteNames.evaluationList:
         return _buildRoute(
           const EvaluationListScreen(),
@@ -61,6 +81,12 @@ class AppRouter {
           );
         }
         return _errorRoute(settings);
+
+      case RouteNames.statistics:
+        return _buildRoute(
+          const StatisticsScreen(),
+          settings: settings,
+        );
 
       // ========================================
       // FORM STEP ROUTES
@@ -129,6 +155,20 @@ class AppRouter {
           settings: settings,
         );
 
+      case RouteNames.formStep10:
+        return _buildFormStepRoute(
+          step: 10,
+          arguments: arguments,
+          settings: settings,
+        );
+
+      case RouteNames.formStep11:
+        return _buildFormStepRoute(
+          step: 11,
+          arguments: arguments,
+          settings: settings,
+        );
+
       // ========================================
       // ERROR ROUTE
       // ========================================
@@ -180,6 +220,12 @@ class AppRouter {
         break;
       case 9:
         screen = Step9AdditionalDataScreen(evaluationId: evaluationId);
+        break;
+      case 10:
+        screen = Step10BuildingLandCostScreen(evaluationId: evaluationId);
+        break;
+      case 11:
+        screen = Step11EconomicIncomeScreen(evaluationId: evaluationId);
         break;
       default:
         screen = Step1GeneralInfoScreen(evaluationId: evaluationId);

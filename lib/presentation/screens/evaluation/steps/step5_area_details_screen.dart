@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aljal_evaluation/core/theme/app_colors.dart';
 import 'package:aljal_evaluation/core/theme/app_spacing.dart';
-import 'package:aljal_evaluation/core/routing/route_names.dart';
-import 'package:aljal_evaluation/core/routing/route_arguments.dart';
+import 'package:aljal_evaluation/core/utils/form_field_helpers.dart';
+import 'package:aljal_evaluation/core/routing/step_navigation.dart';
 import 'package:aljal_evaluation/presentation/providers/evaluation_provider.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_text_field.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/form_navigation_buttons.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/step_navigation_dropdown.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step_screen_mixin.dart';
 import 'package:aljal_evaluation/data/models/pages_models/area_details_model.dart';
-import 'package:aljal_evaluation/presentation/shared/responsive/responsive_builder.dart';
+import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_template.dart';
 
 /// Step 5: Area Details Screen
 class Step5AreaDetailsScreen extends ConsumerStatefulWidget {
@@ -25,8 +23,8 @@ class Step5AreaDetailsScreen extends ConsumerStatefulWidget {
       _Step5AreaDetailsScreenState();
 }
 
-class _Step5AreaDetailsScreenState
-    extends ConsumerState<Step5AreaDetailsScreen> {
+class _Step5AreaDetailsScreenState extends ConsumerState<Step5AreaDetailsScreen>
+    with WidgetsBindingObserver, StepScreenMixin {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -41,6 +39,7 @@ class _Step5AreaDetailsScreenState
   @override
   void initState() {
     super.initState();
+    initStepScreen(); // Initialize mixin
 
     // Initialize controllers
     _streetsAndInfrastructureController = TextEditingController();
@@ -77,6 +76,7 @@ class _Step5AreaDetailsScreenState
 
   @override
   void dispose() {
+    disposeStepScreen(); // Clean up mixin
     _streetsAndInfrastructureController.dispose();
     _areaPropertyTypesController.dispose();
     _areaEntrancesExitsController.dispose();
@@ -87,143 +87,73 @@ class _Step5AreaDetailsScreenState
     super.dispose();
   }
 
+  /// Validate the form - returns true if valid
+  bool _validateForm() {
+    return _formKey.currentState?.validate() ?? false;
+  }
+
+  /// Called when validation fails
+  void _onValidationFailed() {
+    _formKey.currentState?.validate();
+  }
+
   void _saveAndContinue() {
     if (_formKey.currentState?.validate() ?? false) {
-      // Create AreaDetailsModel
-      final areaDetails = AreaDetailsModel(
-        streetsAndInfrastructure:
-            _streetsAndInfrastructureController.text.trim().isEmpty
-                ? null
-                : _streetsAndInfrastructureController.text.trim(),
-        areaPropertyTypes: _areaPropertyTypesController.text.trim().isEmpty
-            ? null
-            : _areaPropertyTypesController.text.trim(),
-        areaEntrancesExits: _areaEntrancesExitsController.text.trim().isEmpty
-            ? null
-            : _areaEntrancesExitsController.text.trim(),
-        generalAreaDirection:
-            _generalAreaDirectionController.text.trim().isEmpty
-                ? null
-                : _generalAreaDirectionController.text.trim(),
-        areaRentalRates: _areaRentalRatesController.text.trim().isEmpty
-            ? null
-            : _areaRentalRatesController.text.trim(),
-        neighboringTenantTypes:
-            _neighboringTenantTypesController.text.trim().isEmpty
-                ? null
-                : _neighboringTenantTypesController.text.trim(),
-        areaVacancyRates: _areaVacancyRatesController.text.trim().isEmpty
-            ? null
-            : _areaVacancyRatesController.text.trim(),
-      );
-
-      // Update state
-      ref
-          .read(evaluationNotifierProvider.notifier)
-          .updateAreaDetails(areaDetails);
+      // Save to memory state only (no Firebase save)
+      saveCurrentDataToState();
 
       // Navigate to Step 6
-      Navigator.pushReplacementNamed(
+      StepNavigation.goToNextStep(
         context,
-        RouteNames.formStep6,
-        arguments: FormStepArguments.forStep(
-          step: 6,
-          evaluationId: widget.evaluationId,
-        ),
+        currentStep: 5,
+        evaluationId: widget.evaluationId,
       );
     }
   }
 
   void _goBack() {
-    Navigator.pushReplacementNamed(
+    // Save to memory state only (no Firebase save)
+    saveCurrentDataToState();
+
+    StepNavigation.goToPreviousStep(
       context,
-      RouteNames.formStep4,
-      arguments: FormStepArguments.forStep(
-        step: 4,
-        evaluationId: widget.evaluationId,
-      ),
+      currentStep: 5,
+      evaluationId: widget.evaluationId,
     );
+  }
+
+  /// Save current form data to state without validation
+  @override
+  void saveCurrentDataToState() {
+    final areaDetails = AreaDetailsModel(
+      streetsAndInfrastructure: _streetsAndInfrastructureController.textOrNull,
+      areaPropertyTypes: _areaPropertyTypesController.textOrNull,
+      areaEntrancesExits: _areaEntrancesExitsController.textOrNull,
+      generalAreaDirection: _generalAreaDirectionController.textOrNull,
+      areaRentalRates: _areaRentalRatesController.textOrNull,
+      neighboringTenantTypes: _neighboringTenantTypesController.textOrNull,
+      areaVacancyRates: _areaVacancyRatesController.textOrNull,
+    );
+    ref
+        .read(evaluationNotifierProvider.notifier)
+        .updateAreaDetails(areaDetails);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          elevation: 0,
-          centerTitle: true,
-          leadingWidth: 70,
-          leading: GestureDetector(
-            onTap: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              RouteNames.evaluationList,
-              (route) => false,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Image.asset(
-                'assets/images/Al_Jal_Logo.png',
-                width: 50,
-                height: 50,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.business_rounded,
-                    color: AppColors.primary,
-                    size: 28,
-                  );
-                },
-              ),
-            ),
-          ),
-          title: StepNavigationDropdown(
-            currentStep: 5,
-            evaluationId: widget.evaluationId,
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
-              onPressed: _goBack,
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        body: SafeArea(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: AppSpacing.screenPaddingMobileInsets,
-                    child: ResponsiveBuilder(
-                      builder: (context, deviceType) {
-                        switch (deviceType) {
-                          case DeviceType.mobile:
-                            return _buildMobileLayout();
-                          case DeviceType.tablet:
-                            return _buildTabletLayout();
-                          case DeviceType.desktop:
-                            return _buildDesktopLayout();
-                        }
-                      },
-                    ),
-                  ),
-                ),
-                // Navigation buttons
-                FormNavigationButtons(
-                  currentStep: 5,
-                  onNext: _saveAndContinue,
-                  onPrevious: _goBack,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return StepScreenTemplate(
+      currentStep: 5,
+      evaluationId: widget.evaluationId,
+      formKey: _formKey,
+      onNext: _saveAndContinue,
+      onPrevious: _goBack,
+      onLogoTap: showExitConfirmationDialog,
+      onSaveToMemory: saveCurrentDataToState,
+      validateBeforeNavigation: _validateForm,
+      onValidationFailed: _onValidationFailed,
+      mobileContent: _buildMobileLayout(),
+      tabletContent: _buildTabletLayout(),
+      desktopContent: _buildDesktopLayout(),
     );
   }
 
@@ -290,6 +220,7 @@ class _Step5AreaDetailsScreenState
       label: 'الشوارع والبنية التحتية',
       hint: 'الشوارع والبنية التحتية',
       maxLines: 2,
+      showValidationDot: true,
     );
   }
 
@@ -299,6 +230,7 @@ class _Step5AreaDetailsScreenState
       label: 'مداخل ومخارج المنطقة',
       hint: 'مداخل ومخارج المنطقة',
       maxLines: 2,
+      showValidationDot: true,
     );
   }
 
@@ -308,6 +240,7 @@ class _Step5AreaDetailsScreenState
       label: 'أنواع العقارات بالمنطقة',
       hint: 'أنواع العقارات بالمنطقة',
       maxLines: 2,
+      showValidationDot: true,
     );
   }
 
@@ -317,6 +250,7 @@ class _Step5AreaDetailsScreenState
       label: 'التوجه العام بالمنطقة',
       hint: 'التوجه العام بالمنطقة',
       maxLines: 2,
+      showValidationDot: true,
     );
   }
 
@@ -326,6 +260,7 @@ class _Step5AreaDetailsScreenState
       label: 'معدل الإيجارات بالمنطقة',
       hint: 'معدل الإيجارات بالمنطقة',
       maxLines: 2,
+      showValidationDot: true,
     );
   }
 
@@ -335,6 +270,7 @@ class _Step5AreaDetailsScreenState
       label: 'نوع المستأجرين بالعقارات المجاورة',
       hint: 'نوع المستأجرين بالعقارات المجاورة',
       maxLines: 2,
+      showValidationDot: true,
     );
   }
 

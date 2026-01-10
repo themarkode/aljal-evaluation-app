@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aljal_evaluation/core/theme/app_colors.dart';
 import 'package:aljal_evaluation/core/theme/app_spacing.dart';
-import 'package:aljal_evaluation/core/routing/route_names.dart';
-import 'package:aljal_evaluation/core/routing/route_arguments.dart';
+import 'package:aljal_evaluation/core/utils/form_field_helpers.dart';
+import 'package:aljal_evaluation/core/utils/validators/auto_number_validator.dart';
+import 'package:aljal_evaluation/core/routing/step_navigation.dart';
 import 'package:aljal_evaluation/core/constants/dropdown_options.dart';
 import 'package:aljal_evaluation/presentation/providers/evaluation_provider.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_text_field.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_dropdown.dart';
+import 'package:aljal_evaluation/presentation/widgets/atoms/custom_searchable_dropdown.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_date_picker.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/form_navigation_buttons.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/step_navigation_dropdown.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step_screen_mixin.dart';
 import 'package:aljal_evaluation/data/models/pages_models/general_property_info_model.dart';
-import 'package:aljal_evaluation/presentation/shared/responsive/responsive_builder.dart';
+import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_template.dart';
 
 /// Step 2: General Property Information Screen
 class Step2GeneralPropertyInfoScreen extends ConsumerStatefulWidget {
@@ -29,11 +29,11 @@ class Step2GeneralPropertyInfoScreen extends ConsumerStatefulWidget {
 }
 
 class _Step2GeneralPropertyInfoScreenState
-    extends ConsumerState<Step2GeneralPropertyInfoScreen> {
+    extends ConsumerState<Step2GeneralPropertyInfoScreen>
+    with WidgetsBindingObserver, StepScreenMixin {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
-  late TextEditingController _areaController;
   late TextEditingController _plotNumberController;
   late TextEditingController _parcelNumberController;
   late TextEditingController _planNumberController;
@@ -49,17 +49,20 @@ class _Step2GeneralPropertyInfoScreenState
 
   // Dropdown values
   String? _governorate;
+  String? _area;
   String? _propertyType;
 
   // Date value
   DateTime? _documentDate;
 
+  // Note: errorBlinkTrigger is now provided by StepScreenMixin (centralized)
+
   @override
   void initState() {
     super.initState();
+    initStepScreen(); // Initialize mixin
 
     // Initialize controllers
-    _areaController = TextEditingController();
     _plotNumberController = TextEditingController();
     _parcelNumberController = TextEditingController();
     _planNumberController = TextEditingController();
@@ -84,7 +87,6 @@ class _Step2GeneralPropertyInfoScreenState
     final propertyInfo = evaluation.generalPropertyInfo;
 
     if (propertyInfo != null) {
-      _areaController.text = propertyInfo.area ?? '';
       _plotNumberController.text = propertyInfo.plotNumber ?? '';
       _parcelNumberController.text = propertyInfo.parcelNumber ?? '';
       _planNumberController.text = propertyInfo.planNumber ?? '';
@@ -101,6 +103,7 @@ class _Step2GeneralPropertyInfoScreenState
 
       setState(() {
         _governorate = propertyInfo.governorate;
+        _area = propertyInfo.area;
         _propertyType = propertyInfo.propertyType;
         _documentDate = propertyInfo.documentDate;
       });
@@ -109,7 +112,7 @@ class _Step2GeneralPropertyInfoScreenState
 
   @override
   void dispose() {
-    _areaController.dispose();
+    disposeStepScreen(); // Clean up mixin (removes lifecycle observer + errorBlinkTrigger)
     _plotNumberController.dispose();
     _parcelNumberController.dispose();
     _planNumberController.dispose();
@@ -125,171 +128,92 @@ class _Step2GeneralPropertyInfoScreenState
     super.dispose();
   }
 
+  /// Validate the form - returns true if valid
+  bool _validateForm() {
+    return _formKey.currentState?.validate() ?? false;
+  }
+
+  /// Trigger blink animation on error text fields
+  void _onValidationFailed() {
+    // Validate to show error messages
+    _formKey.currentState?.validate();
+
+    // Trigger blink on error fields using centralized mixin method
+    triggerErrorBlink();
+  }
+
   void _saveAndContinue() {
     // Validate form - show errors if validation fails
     final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) {
-      // Scroll to first error
-      Scrollable.ensureVisible(
-        context,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      // Trigger blink on error fields
+      _onValidationFailed();
       return;
     }
 
-    // Create GeneralPropertyInfoModel
-    final propertyInfo = GeneralPropertyInfoModel(
-      governorate: _governorate,
-      area: _areaController.text.trim().isEmpty
-          ? null
-          : _areaController.text.trim(),
-      plotNumber: _plotNumberController.text.trim().isEmpty
-          ? null
-          : _plotNumberController.text.trim(),
-      parcelNumber: _parcelNumberController.text.trim().isEmpty
-          ? null
-          : _parcelNumberController.text.trim(),
-      planNumber: _planNumberController.text.trim().isEmpty
-          ? null
-          : _planNumberController.text.trim(),
-      documentNumber: _documentNumberController.text.trim().isEmpty
-          ? null
-          : _documentNumberController.text.trim(),
-      documentDate: _documentDate,
-      areaSize: _areaSizeController.text.trim().isEmpty
-          ? null
-          : double.tryParse(_areaSizeController.text.trim()),
-      propertyType: _propertyType,
-      autoNumber: _autoNumberController.text.trim().isEmpty
-          ? null
-          : _autoNumberController.text.trim(),
-      houseNumber: _houseNumberController.text.trim().isEmpty
-          ? null
-          : _houseNumberController.text.trim(),
-      streetCount: _streetCountController.text.trim().isEmpty
-          ? null
-          : int.tryParse(_streetCountController.text.trim()),
-      parkingCount: _parkingCountController.text.trim().isEmpty
-          ? null
-          : int.tryParse(_parkingCountController.text.trim()),
-      landNotes: _landNotesController.text.trim().isEmpty
-          ? null
-          : _landNotesController.text.trim(),
-      landFacing: _landFacingController.text.trim().isEmpty
-          ? null
-          : _landFacingController.text.trim(),
-      landShape: _landShapeController.text.trim().isEmpty
-          ? null
-          : _landShapeController.text.trim(),
-    );
+    // Save to memory state only (no Firebase save)
+    saveCurrentDataToState();
 
-    // Update state
-    ref
-        .read(evaluationNotifierProvider.notifier)
-        .updateGeneralPropertyInfo(propertyInfo);
-
-    // Navigate to Step 3 (which currently routes to Step 4)
-    Navigator.pushReplacementNamed(
+    // Navigate to Step 3
+    StepNavigation.goToNextStep(
       context,
-      RouteNames.formStep3,
-      arguments: FormStepArguments.forStep(
-        step: 3,
-        evaluationId: widget.evaluationId,
-      ),
+      currentStep: 2,
+      evaluationId: widget.evaluationId,
     );
   }
 
   void _goBack() {
-    Navigator.pushReplacementNamed(
+    // Save to memory state only (no Firebase save)
+    saveCurrentDataToState();
+
+    StepNavigation.goToPreviousStep(
       context,
-      RouteNames.formStep1,
-      arguments: FormStepArguments.forStep(
-        step: 1,
-        evaluationId: widget.evaluationId,
-      ),
+      currentStep: 2,
+      evaluationId: widget.evaluationId,
     );
+  }
+
+  /// Save current form data to state without validation
+  @override
+  void saveCurrentDataToState() {
+    final propertyInfo = GeneralPropertyInfoModel(
+      governorate: _governorate,
+      area: _area,
+      plotNumber: _plotNumberController.textOrNull,
+      parcelNumber: _parcelNumberController.textOrNull,
+      planNumber: _planNumberController.textOrNull,
+      documentNumber: _documentNumberController.textOrNull,
+      documentDate: _documentDate,
+      areaSize: _areaSizeController.doubleOrNull,
+      propertyType: _propertyType,
+      autoNumber: _autoNumberController.textOrNull,
+      houseNumber: _houseNumberController.textOrNull,
+      streetCount: _streetCountController.intOrNull,
+      parkingCount: _parkingCountController.intOrNull,
+      landNotes: _landNotesController.textOrNull,
+      landFacing: _landFacingController.textOrNull,
+      landShape: _landShapeController.textOrNull,
+    );
+    ref
+        .read(evaluationNotifierProvider.notifier)
+        .updateGeneralPropertyInfo(propertyInfo);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          elevation: 0,
-          centerTitle: true,
-          leadingWidth: 70,
-          leading: GestureDetector(
-            onTap: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              RouteNames.evaluationList,
-              (route) => false,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Image.asset(
-                'assets/images/Al_Jal_Logo.png',
-                width: 50,
-                height: 50,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.business_rounded,
-                    color: AppColors.primary,
-                    size: 28,
-                  );
-                },
-              ),
-            ),
-          ),
-          title: StepNavigationDropdown(
-            currentStep: 2,
-            evaluationId: widget.evaluationId,
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
-              onPressed: _goBack,
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        body: SafeArea(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: AppSpacing.screenPaddingMobileInsets,
-                    child: ResponsiveBuilder(
-                      builder: (context, deviceType) {
-                        switch (deviceType) {
-                          case DeviceType.mobile:
-                            return _buildMobileLayout();
-                          case DeviceType.tablet:
-                            return _buildTabletLayout();
-                          case DeviceType.desktop:
-                            return _buildDesktopLayout();
-                        }
-                      },
-                    ),
-                  ),
-                ),
-                // Navigation buttons
-                FormNavigationButtons(
-                  currentStep: 2,
-                  onNext: _saveAndContinue,
-                  onPrevious: _goBack,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return StepScreenTemplate(
+      currentStep: 2,
+      evaluationId: widget.evaluationId,
+      formKey: _formKey,
+      onNext: _saveAndContinue,
+      onPrevious: _goBack,
+      onLogoTap: showExitConfirmationDialog,
+      onSaveToMemory: saveCurrentDataToState,
+      validateBeforeNavigation: _validateForm,
+      onValidationFailed: _onValidationFailed,
+      mobileContent: _buildMobileLayout(),
+      tabletContent: _buildTabletLayout(),
+      desktopContent: _buildDesktopLayout(),
     );
   }
 
@@ -404,19 +328,32 @@ class _Step2GeneralPropertyInfoScreenState
       hint: 'اسم المحافظة',
       value: _governorate,
       items: DropdownOptions.governorates,
+      showValidationDot: true,
       onChanged: (value) {
         setState(() {
           _governorate = value;
+          // Reset area when governorate changes
+          _area = null;
         });
       },
     );
   }
 
   Widget _buildAreaField() {
-    return CustomTextField(
-      controller: _areaController,
+    final areas = DropdownOptions.getAreasForGovernorate(_governorate);
+    return CustomSearchableDropdown(
       label: 'اسم المنطقة',
-      hint: 'اسم المنطقة',
+      hint: 'ابحث عن المنطقة...',
+      value: _area,
+      items: areas,
+      showValidationDot: true,
+      enabled: _governorate != null,
+      allowCustomValue: true, // Allow user to type custom area if not in list
+      onChanged: (value) {
+        setState(() {
+          _area = value;
+        });
+      },
     );
   }
 
@@ -425,6 +362,7 @@ class _Step2GeneralPropertyInfoScreenState
       controller: _plotNumberController,
       label: 'رقم القطعة',
       hint: 'رقم القطعة',
+      showValidationDot: true,
     );
   }
 
@@ -433,6 +371,7 @@ class _Step2GeneralPropertyInfoScreenState
       controller: _parcelNumberController,
       label: 'رقم القسيمة',
       hint: 'رقم القسيمة',
+      showValidationDot: true,
     );
   }
 
@@ -441,6 +380,7 @@ class _Step2GeneralPropertyInfoScreenState
       controller: _planNumberController,
       label: 'رقم المخطط',
       hint: 'رقم المخطط',
+      showValidationDot: true,
     );
   }
 
@@ -449,6 +389,7 @@ class _Step2GeneralPropertyInfoScreenState
       controller: _documentNumberController,
       label: 'رقم الوثيقة',
       hint: 'رقم الوثيقة',
+      showValidationDot: true,
     );
   }
 
@@ -456,6 +397,7 @@ class _Step2GeneralPropertyInfoScreenState
     return CustomDatePicker(
       label: 'تاريخ الوثيقة',
       value: _documentDate,
+      showValidationDot: true,
       onChanged: (date) {
         setState(() {
           _documentDate = date;
@@ -470,6 +412,7 @@ class _Step2GeneralPropertyInfoScreenState
       label: 'المساحة م²',
       hint: 'المساحة م²',
       keyboardType: TextInputType.number,
+      showValidationDot: true,
     );
   }
 
@@ -479,6 +422,7 @@ class _Step2GeneralPropertyInfoScreenState
       hint: 'نوع العقار',
       value: _propertyType,
       items: DropdownOptions.propertyTypes,
+      showValidationDot: true,
       onChanged: (value) {
         setState(() {
           _propertyType = value;
@@ -491,7 +435,13 @@ class _Step2GeneralPropertyInfoScreenState
     return CustomTextField(
       controller: _autoNumberController,
       label: 'الرقم الآلي',
-      hint: 'الرقم الآلي',
+      hint: 'أدخل 8 أرقام',
+      showValidationDot: true,
+      keyboardType: TextInputType.number,
+      inputFormatters: AutoNumberValidator.formatters(),
+      validator: AutoNumberValidator.validate,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      errorBlinkTrigger: errorBlinkTrigger, // From StepScreenMixin
     );
   }
 

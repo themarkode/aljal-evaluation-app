@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aljal_evaluation/core/theme/app_colors.dart';
 import 'package:aljal_evaluation/core/theme/app_spacing.dart';
-import 'package:aljal_evaluation/core/routing/route_names.dart';
-import 'package:aljal_evaluation/core/routing/route_arguments.dart';
+import 'package:aljal_evaluation/core/utils/form_field_helpers.dart';
+import 'package:aljal_evaluation/core/utils/validators/phone_validator.dart';
+import 'package:aljal_evaluation/core/routing/step_navigation.dart';
 import 'package:aljal_evaluation/presentation/providers/evaluation_provider.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_text_field.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_date_picker.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/form_navigation_buttons.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/step_navigation_dropdown.dart';
 import 'package:aljal_evaluation/data/models/pages_models/general_info_model.dart';
-import 'package:aljal_evaluation/presentation/shared/responsive/responsive_builder.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step_screen_mixin.dart';
+import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_template.dart';
 
 /// Step 1: General Information Screen
 class Step1GeneralInfoScreen extends ConsumerStatefulWidget {
@@ -26,8 +25,8 @@ class Step1GeneralInfoScreen extends ConsumerStatefulWidget {
       _Step1GeneralInfoScreenState();
 }
 
-class _Step1GeneralInfoScreenState
-    extends ConsumerState<Step1GeneralInfoScreen> {
+class _Step1GeneralInfoScreenState extends ConsumerState<Step1GeneralInfoScreen>
+    with WidgetsBindingObserver, StepScreenMixin {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -43,9 +42,12 @@ class _Step1GeneralInfoScreenState
   DateTime? _issueDate;
   DateTime? _inspectionDate;
 
+  // Note: errorBlinkTrigger is now provided by StepScreenMixin (centralized)
+
   @override
   void initState() {
     super.initState();
+    initStepScreen(); // Initialize mixin (adds lifecycle observer)
 
     // Initialize controllers
     _requestorNameController = TextEditingController();
@@ -125,6 +127,7 @@ class _Step1GeneralInfoScreenState
 
   @override
   void dispose() {
+    disposeStepScreen(); // Clean up mixin (removes lifecycle observer + errorBlinkTrigger)
     _requestorNameController.dispose();
     _clientNameController.dispose();
     _ownerNameController.dispose();
@@ -134,52 +137,58 @@ class _Step1GeneralInfoScreenState
     super.dispose();
   }
 
+  /// Validate the form - returns true if valid
+  bool _validateForm() {
+    return _formKey.currentState?.validate() ?? false;
+  }
+
+  /// Trigger blink animation on error text fields
+  void _onValidationFailed() {
+    // Validate to show error messages
+    _formKey.currentState?.validate();
+    
+    // Trigger blink on error fields using centralized mixin method
+    triggerErrorBlink();
+  }
+
   void _saveAndContinue() {
     if (_formKey.currentState?.validate() ?? false) {
-      // Create GeneralInfoModel
-      final generalInfo = GeneralInfoModel(
-        requestorName: _requestorNameController.text.trim().isEmpty
-            ? null
-            : _requestorNameController.text.trim(),
-        clientName: _clientNameController.text.trim().isEmpty
-            ? null
-            : _clientNameController.text.trim(),
-        ownerName: _ownerNameController.text.trim().isEmpty
-            ? null
-            : _ownerNameController.text.trim(),
-        requestDate: _requestDate,
-        issueDate: _issueDate,
-        inspectionDate: _inspectionDate,
-        clientPhone: _clientPhoneController.text.trim().isEmpty
-            ? null
-            : _clientPhoneController.text.trim(),
-        guardPhone: _guardPhoneController.text.trim().isEmpty
-            ? null
-            : _guardPhoneController.text.trim(),
-        siteManagerPhone: _siteManagerPhoneController.text.trim().isEmpty
-            ? null
-            : _siteManagerPhoneController.text.trim(),
-      );
-
-      // Update state
-      ref
-          .read(evaluationNotifierProvider.notifier)
-          .updateGeneralInfo(generalInfo);
+      // Save to memory state only (no Firebase save)
+      saveCurrentDataToState();
 
       // Navigate to Step 2
-      Navigator.pushReplacementNamed(
+      StepNavigation.goToNextStep(
         context,
-        RouteNames.formStep2,
-        arguments: FormStepArguments.forStep(
-          step: 2,
-          evaluationId: widget.evaluationId,
-        ),
+        currentStep: 1,
+        evaluationId: widget.evaluationId,
       );
+    } else {
+      // Validation failed - trigger blink
+      _onValidationFailed();
     }
   }
 
-  void _cancel() {
-    Navigator.pop(context);
+  Future<void> _cancel() async {
+    await showExitConfirmationDialog(); // From mixin
+  }
+
+  /// Save current form data to state without validation
+  @override
+  void saveCurrentDataToState() {
+    final generalInfo = GeneralInfoModel(
+      requestorName: _requestorNameController.textOrNull,
+      clientName: _clientNameController.textOrNull,
+      ownerName: _ownerNameController.textOrNull,
+      requestDate: _requestDate,
+      issueDate: _issueDate,
+      inspectionDate: _inspectionDate,
+      clientPhone: _clientPhoneController.textOrNull,
+      guardPhone: _guardPhoneController.textOrNull,
+      siteManagerPhone: _siteManagerPhoneController.textOrNull,
+    );
+    ref
+        .read(evaluationNotifierProvider.notifier)
+        .updateGeneralInfo(generalInfo);
   }
 
   @override
@@ -188,89 +197,19 @@ class _Step1GeneralInfoScreenState
     // loading is handled in initState via _loadEvaluation(). Using watch()
     // would cause unnecessary rebuilds and the postFrameCallback anti-pattern.
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          elevation: 0,
-          centerTitle: true,
-          leadingWidth: 70,
-          // Logo on LEFT
-          leading: GestureDetector(
-            onTap: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              RouteNames.evaluationList,
-              (route) => false,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Image.asset(
-                'assets/images/Al_Jal_Logo.png',
-                width: 50,
-                height: 50,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.business_rounded,
-                    color: AppColors.primary,
-                    size: 28,
-                  );
-                },
-              ),
-            ),
-          ),
-          // Dropdown in CENTER with more space
-          title: StepNavigationDropdown(
-            currentStep: 1,
-            evaluationId: widget.evaluationId,
-          ),
-          // Back arrow on RIGHT
-          actions: [
-            IconButton(
-              icon: Icon(
-                Icons.arrow_forward_rounded,
-                color: AppColors.primary,
-              ),
-              onPressed: _cancel,
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        body: SafeArea(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: AppSpacing.screenPaddingMobileInsets,
-                    child: ResponsiveBuilder(
-                      builder: (context, deviceType) {
-                        switch (deviceType) {
-                          case DeviceType.mobile:
-                            return _buildMobileLayout();
-                          case DeviceType.tablet:
-                            return _buildTabletLayout();
-                          case DeviceType.desktop:
-                            return _buildDesktopLayout();
-                        }
-                      },
-                    ),
-                  ),
-                ),
-                // Navigation buttons
-                FormNavigationButtons(
-                  currentStep: 1,
-                  onNext: _saveAndContinue,
-                  onPrevious: _cancel,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return StepScreenTemplate(
+      currentStep: 1,
+      evaluationId: widget.evaluationId,
+      formKey: _formKey,
+      onNext: _saveAndContinue,
+      onPrevious: _cancel,
+      onLogoTap: showExitConfirmationDialog,
+      onSaveToMemory: saveCurrentDataToState,
+      validateBeforeNavigation: _validateForm,
+      onValidationFailed: _onValidationFailed,
+      mobileContent: _buildMobileLayout(),
+      tabletContent: _buildTabletLayout(),
+      desktopContent: _buildDesktopLayout(),
     );
   }
 
@@ -348,6 +287,7 @@ class _Step1GeneralInfoScreenState
       controller: _requestorNameController,
       label: 'اسم الجهة الطالبة للتقييم',
       hint: 'اسم الجهة الطالبة للتقييم',
+      showValidationDot: true,
     );
   }
 
@@ -356,6 +296,7 @@ class _Step1GeneralInfoScreenState
       controller: _clientNameController,
       label: 'العميل',
       hint: 'العميل',
+      showValidationDot: true,
     );
   }
 
@@ -364,6 +305,7 @@ class _Step1GeneralInfoScreenState
       controller: _ownerNameController,
       label: 'المالك',
       hint: 'المالك',
+      showValidationDot: true,
     );
   }
 
@@ -371,6 +313,7 @@ class _Step1GeneralInfoScreenState
     return CustomDatePicker(
       label: 'تاريخ طلب التقييم',
       value: _requestDate,
+      showValidationDot: true,
       onChanged: (date) {
         setState(() {
           _requestDate = date;
@@ -383,6 +326,7 @@ class _Step1GeneralInfoScreenState
     return CustomDatePicker(
       label: 'تاريخ إصدار التقييم',
       value: _issueDate,
+      showValidationDot: true,
       onChanged: (date) {
         setState(() {
           _issueDate = date;
@@ -395,6 +339,7 @@ class _Step1GeneralInfoScreenState
     return CustomDatePicker(
       label: 'تاريخ الكشف',
       value: _inspectionDate,
+      showValidationDot: true,
       onChanged: (date) {
         setState(() {
           _inspectionDate = date;
@@ -407,8 +352,12 @@ class _Step1GeneralInfoScreenState
     return CustomTextField(
       controller: _clientPhoneController,
       label: 'رقم العميل',
-      hint: '+965',
-      keyboardType: TextInputType.phone,
+      hint: '\u200E+965', // LTR mark to display +965 correctly in RTL
+      keyboardType: TextInputType.number,
+      inputFormatters: PhoneValidator.formatters(),
+      validator: PhoneValidator.validate,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      errorBlinkTrigger: errorBlinkTrigger, // From StepScreenMixin
     );
   }
 
@@ -416,8 +365,12 @@ class _Step1GeneralInfoScreenState
     return CustomTextField(
       controller: _guardPhoneController,
       label: 'رقم حارس العقار',
-      hint: '+965',
-      keyboardType: TextInputType.phone,
+      hint: '\u200E+965', // LTR mark to display +965 correctly in RTL
+      keyboardType: TextInputType.number,
+      inputFormatters: PhoneValidator.formatters(),
+      validator: PhoneValidator.validate,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      errorBlinkTrigger: errorBlinkTrigger, // From StepScreenMixin
     );
   }
 
@@ -425,8 +378,12 @@ class _Step1GeneralInfoScreenState
     return CustomTextField(
       controller: _siteManagerPhoneController,
       label: 'رقم مسؤول الموقع',
-      hint: '+965',
-      keyboardType: TextInputType.phone,
+      hint: '\u200E+965', // LTR mark to display +965 correctly in RTL
+      keyboardType: TextInputType.number,
+      inputFormatters: PhoneValidator.formatters(),
+      validator: PhoneValidator.validate,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      errorBlinkTrigger: errorBlinkTrigger, // From StepScreenMixin
     );
   }
 }

@@ -1,18 +1,19 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:aljal_evaluation/core/theme/app_colors.dart';
 import 'package:aljal_evaluation/core/theme/app_typography.dart';
 import 'package:aljal_evaluation/core/theme/app_spacing.dart';
-import 'package:aljal_evaluation/core/routing/route_names.dart';
-import 'package:aljal_evaluation/core/routing/route_arguments.dart';
+import 'package:aljal_evaluation/core/utils/form_field_helpers.dart';
+import 'package:aljal_evaluation/core/routing/step_navigation.dart';
 import 'package:aljal_evaluation/presentation/providers/evaluation_provider.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_text_field.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/form_navigation_buttons.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/step_navigation_dropdown.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step_screen_mixin.dart';
 import 'package:aljal_evaluation/data/models/pages_models/image_model.dart';
 import 'package:aljal_evaluation/data/services/image_service.dart';
+import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_template.dart';
 
 /// Step 8: Property Images Screen
 class Step8PropertyImagesScreen extends ConsumerStatefulWidget {
@@ -29,7 +30,8 @@ class Step8PropertyImagesScreen extends ConsumerStatefulWidget {
 }
 
 class _Step8PropertyImagesScreenState
-    extends ConsumerState<Step8PropertyImagesScreen> {
+    extends ConsumerState<Step8PropertyImagesScreen>
+    with WidgetsBindingObserver, StepScreenMixin {
   final _formKey = GlobalKey<FormState>();
   final ImageService _imageService = ImageService();
   final ImagePicker _imagePicker = ImagePicker();
@@ -65,6 +67,7 @@ class _Step8PropertyImagesScreenState
   @override
   void initState() {
     super.initState();
+    initStepScreen(); // Initialize mixin
 
     // Initialize controllers
     _locationAddressTextController = TextEditingController();
@@ -100,9 +103,28 @@ class _Step8PropertyImagesScreenState
 
   @override
   void dispose() {
+    disposeStepScreen(); // Clean up mixin
     _locationAddressTextController.dispose();
     _locationAddressLinkController.dispose();
     super.dispose();
+  }
+
+  /// Validate the form - returns true if valid
+  bool _validateForm() {
+    return _formKey.currentState?.validate() ?? false;
+  }
+
+  /// Called when validation fails
+  void _onValidationFailed() {
+    _formKey.currentState?.validate();
+  }
+
+  // Check if we're on desktop platform (Windows, macOS, Linux)
+  bool get _isDesktop {
+    if (kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.windows ||
+           defaultTargetPlatform == TargetPlatform.macOS ||
+           defaultTargetPlatform == TargetPlatform.linux;
   }
 
   // Show image source selection dialog
@@ -112,6 +134,19 @@ class _Step8PropertyImagesScreenState
     required Function(bool) setUploading,
     required Function(double) setProgress,
   }) async {
+    // On desktop, directly pick from files (no camera option)
+    if (_isDesktop) {
+      _pickAndUploadImage(
+        imageType: imageType,
+        onUploadComplete: onUploadComplete,
+        setUploading: setUploading,
+        setProgress: setProgress,
+        source: ImageSource.gallery, // Opens file picker on desktop
+      );
+      return;
+    }
+
+    // On mobile, show camera/gallery options
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -200,7 +235,7 @@ class _Step8PropertyImagesScreenState
       final XFile? pickedFile = await _imagePicker.pickImage(
         source: source,
         imageQuality: 85, // Compress slightly for camera images
-        maxWidth: 1920,   // Limit size for camera images
+        maxWidth: 1920, // Limit size for camera images
         maxHeight: 1920,
       );
 
@@ -212,12 +247,15 @@ class _Step8PropertyImagesScreenState
       // Get evaluation ID - ensure it exists or create one
       final evaluation = ref.read(evaluationNotifierProvider);
       String? evaluationId = evaluation.evaluationId;
-      
+
       // If no evaluation ID exists, save the evaluation first to get a proper ID
       if (evaluationId == null || evaluationId.isEmpty) {
         try {
-          final savedId = await ref.read(evaluationNotifierProvider.notifier).saveEvaluation();
-          evaluationId = savedId ?? 'temp_${DateTime.now().millisecondsSinceEpoch}';
+          final savedId = await ref
+              .read(evaluationNotifierProvider.notifier)
+              .saveEvaluation();
+          evaluationId =
+              savedId ?? 'temp_${DateTime.now().millisecondsSinceEpoch}';
         } catch (e) {
           // If save fails, use temporary ID (timestamp in milliseconds - no spaces)
           evaluationId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
@@ -268,232 +306,169 @@ class _Step8PropertyImagesScreenState
 
   void _saveAndContinue() {
     if (_formKey.currentState?.validate() ?? false) {
-      // Create ImageModel
-      final images = ImageModel(
-        propertyLocationMapImageUrl: _propertyLocationMapImageUrl,
-        propertyImageUrl: _propertyImageUrl,
-        propertyVariousImages1Url: _propertyVariousImages1Url,
-        propertyVariousImages2Url: _propertyVariousImages2Url,
-        satelliteLocationImageUrl: _satelliteLocationImageUrl,
-        civilPlotMapImageUrl: _civilPlotMapImageUrl,
-        locationAddressText: _locationAddressTextController.text.trim().isEmpty
-            ? null
-            : _locationAddressTextController.text.trim(),
-        locationAddressLink: _locationAddressLinkController.text.trim().isEmpty
-            ? null
-            : _locationAddressLinkController.text.trim(),
-      );
-
-      // Update state
-      ref
-          .read(evaluationNotifierProvider.notifier)
-          .updatePropertyImages(images);
+      // Save to memory state only (no Firebase save)
+      saveCurrentDataToState();
 
       // Navigate to Step 9
-      Navigator.pushReplacementNamed(
+      StepNavigation.goToNextStep(
         context,
-        RouteNames.formStep9,
-        arguments: FormStepArguments.forStep(
-          step: 9,
-          evaluationId: widget.evaluationId,
-        ),
+        currentStep: 8,
+        evaluationId: widget.evaluationId,
       );
     }
   }
 
   void _goBack() {
-    Navigator.pushReplacementNamed(
+    // Save to memory state only (no Firebase save)
+    saveCurrentDataToState();
+
+    StepNavigation.goToPreviousStep(
       context,
-      RouteNames.formStep7,
-      arguments: FormStepArguments.forStep(
-        step: 7,
-        evaluationId: widget.evaluationId,
-      ),
+      currentStep: 8,
+      evaluationId: widget.evaluationId,
     );
+  }
+
+  /// Save current form data to state without validation
+  @override
+  void saveCurrentDataToState() {
+    final images = ImageModel(
+      propertyLocationMapImageUrl: _propertyLocationMapImageUrl,
+      propertyImageUrl: _propertyImageUrl,
+      propertyVariousImages1Url: _propertyVariousImages1Url,
+      propertyVariousImages2Url: _propertyVariousImages2Url,
+      satelliteLocationImageUrl: _satelliteLocationImageUrl,
+      civilPlotMapImageUrl: _civilPlotMapImageUrl,
+      locationAddressText: _locationAddressTextController.textOrNull,
+      locationAddressLink: _locationAddressLinkController.textOrNull,
+    );
+    ref.read(evaluationNotifierProvider.notifier).updatePropertyImages(images);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          elevation: 0,
-          centerTitle: true,
-          leadingWidth: 70,
-          leading: GestureDetector(
-            onTap: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              RouteNames.evaluationList,
-              (route) => false,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Image.asset(
-                'assets/images/Al_Jal_Logo.png',
-                width: 50,
-                height: 50,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.business_rounded,
-                    color: AppColors.primary,
-                    size: 28,
-                  );
-                },
-              ),
-            ),
-          ),
-          title: StepNavigationDropdown(
-            currentStep: 8,
-            evaluationId: widget.evaluationId,
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
-              onPressed: _goBack,
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        body: SafeArea(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: AppSpacing.screenPaddingMobileInsets,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildImagePickerWidget(
-                            label:
-                                'صور لموقع العقار حسب المخطط العام لبلدية الكويت',
-                            imageUrl: _propertyLocationMapImageUrl,
-                            isUploading: _isUploadingPropertyLocationMap,
-                            uploadProgress: _progressPropertyLocationMap,
-                            onPickImage: () => _showImageSourceDialog(
-                              imageType: 'property_location_map',
-                              onUploadComplete: (url) =>
-                                  _propertyLocationMapImageUrl = url,
-                              setUploading: (uploading) =>
-                                  _isUploadingPropertyLocationMap = uploading,
-                              setProgress: (progress) =>
-                                  _progressPropertyLocationMap = progress,
-                            ),
-                          ),
-                          AppSpacing.verticalSpaceMD,
-                          _buildImagePickerWidget(
-                            label: 'صورة للعقار',
-                            imageUrl: _propertyImageUrl,
-                            isUploading: _isUploadingPropertyImage,
-                            uploadProgress: _progressPropertyImage,
-                            onPickImage: () => _showImageSourceDialog(
-                              imageType: 'property_image',
-                              onUploadComplete: (url) =>
-                                  _propertyImageUrl = url,
-                              setUploading: (uploading) =>
-                                  _isUploadingPropertyImage = uploading,
-                              setProgress: (progress) =>
-                                  _progressPropertyImage = progress,
-                            ),
-                          ),
-                          AppSpacing.verticalSpaceMD,
-                          _buildLocationAddressTextFieldField(),
-                          AppSpacing.verticalSpaceMD,
-                          _buildLocationAddressLinkField(),
-                          AppSpacing.verticalSpaceMD,
-                          // Other images section
-                          Text(
-                            'صور أخرى',
-                            style: AppTypography.heading.copyWith(fontSize: 18),
-                          ),
-                          AppSpacing.verticalSpaceSM,
-                          _buildImagePickerWidget(
-                            label: 'صور مختلفة للعقار 1',
-                            imageUrl: _propertyVariousImages1Url,
-                            isUploading: _isUploadingPropertyVariousImages1,
-                            uploadProgress: _progressPropertyVariousImages1,
-                            onPickImage: () => _showImageSourceDialog(
-                              imageType: 'property_various_1',
-                              onUploadComplete: (url) =>
-                                  _propertyVariousImages1Url = url,
-                              setUploading: (uploading) =>
-                                  _isUploadingPropertyVariousImages1 =
-                                      uploading,
-                              setProgress: (progress) =>
-                                  _progressPropertyVariousImages1 = progress,
-                            ),
-                          ),
-                          AppSpacing.verticalSpaceMD,
-                          _buildImagePickerWidget(
-                            label: 'صور مختلفة للعقار 2',
-                            imageUrl: _propertyVariousImages2Url,
-                            isUploading: _isUploadingPropertyVariousImages2,
-                            uploadProgress: _progressPropertyVariousImages2,
-                            onPickImage: () => _showImageSourceDialog(
-                              imageType: 'property_various_2',
-                              onUploadComplete: (url) =>
-                                  _propertyVariousImages2Url = url,
-                              setUploading: (uploading) =>
-                                  _isUploadingPropertyVariousImages2 =
-                                      uploading,
-                              setProgress: (progress) =>
-                                  _progressPropertyVariousImages2 = progress,
-                            ),
-                          ),
-                          AppSpacing.verticalSpaceMD,
-                          _buildImagePickerWidget(
-                            label:
-                                'صورة لموقع العقار من القمر الصناعي (google earth)',
-                            imageUrl: _satelliteLocationImageUrl,
-                            isUploading: _isUploadingSatelliteLocation,
-                            uploadProgress: _progressSatelliteLocation,
-                            onPickImage: () => _showImageSourceDialog(
-                              imageType: 'satellite_location',
-                              onUploadComplete: (url) =>
-                                  _satelliteLocationImageUrl = url,
-                              setUploading: (uploading) =>
-                                  _isUploadingSatelliteLocation = uploading,
-                              setProgress: (progress) =>
-                                  _progressSatelliteLocation = progress,
-                            ),
-                          ),
-                          AppSpacing.verticalSpaceMD,
-                          _buildImagePickerWidget(
-                            label:
-                                'صور لموقع القطعة المدنية حسب المخطط العام لبلدية الكويت',
-                            imageUrl: _civilPlotMapImageUrl,
-                            isUploading: _isUploadingCivilPlotMap,
-                            uploadProgress: _progressCivilPlotMap,
-                            onPickImage: () => _showImageSourceDialog(
-                              imageType: 'civil_plot_map',
-                              onUploadComplete: (url) =>
-                                  _civilPlotMapImageUrl = url,
-                              setUploading: (uploading) =>
-                                  _isUploadingCivilPlotMap = uploading,
-                              setProgress: (progress) =>
-                                  _progressCivilPlotMap = progress,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Navigation buttons
-                FormNavigationButtons(
-                  currentStep: 8,
-                  onNext: _saveAndContinue,
-                  onPrevious: _goBack,
-                ),
-              ],
-            ),
+    return StepScreenTemplate(
+      currentStep: 8,
+      evaluationId: widget.evaluationId,
+      formKey: _formKey,
+      onNext: _saveAndContinue,
+      onPrevious: _goBack,
+      onLogoTap: showExitConfirmationDialog,
+      onSaveToMemory: saveCurrentDataToState,
+      validateBeforeNavigation: _validateForm,
+      onValidationFailed: _onValidationFailed,
+      mobileContent: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildImagePickerWidget(
+          label: 'صور لموقع العقار حسب المخطط العام لبلدية الكويت',
+          imageUrl: _propertyLocationMapImageUrl,
+          isUploading: _isUploadingPropertyLocationMap,
+          uploadProgress: _progressPropertyLocationMap,
+          showValidationDot: true,
+          onPickImage: () => _showImageSourceDialog(
+            imageType: 'property_location_map',
+            onUploadComplete: (url) => _propertyLocationMapImageUrl = url,
+            setUploading: (uploading) =>
+                _isUploadingPropertyLocationMap = uploading,
+            setProgress: (progress) =>
+                _progressPropertyLocationMap = progress,
           ),
         ),
-      ),
+        AppSpacing.verticalSpaceMD,
+        _buildImagePickerWidget(
+          label: 'صورة للعقار',
+          imageUrl: _propertyImageUrl,
+          isUploading: _isUploadingPropertyImage,
+          uploadProgress: _progressPropertyImage,
+          showValidationDot: true,
+          onPickImage: () => _showImageSourceDialog(
+            imageType: 'property_image',
+            onUploadComplete: (url) => _propertyImageUrl = url,
+            setUploading: (uploading) =>
+                _isUploadingPropertyImage = uploading,
+            setProgress: (progress) => _progressPropertyImage = progress,
+          ),
+        ),
+        AppSpacing.verticalSpaceMD,
+        _buildLocationAddressTextFieldField(),
+        AppSpacing.verticalSpaceMD,
+        _buildLocationAddressLinkField(),
+        AppSpacing.verticalSpaceMD,
+        // Other images section
+        Text(
+          'صور أخرى',
+          style: AppTypography.heading.copyWith(fontSize: 18),
+        ),
+        AppSpacing.verticalSpaceSM,
+        _buildImagePickerWidget(
+          label: 'صور مختلفة للعقار 1',
+          imageUrl: _propertyVariousImages1Url,
+          isUploading: _isUploadingPropertyVariousImages1,
+          uploadProgress: _progressPropertyVariousImages1,
+          showValidationDot: true,
+          onPickImage: () => _showImageSourceDialog(
+            imageType: 'property_various_1',
+            onUploadComplete: (url) => _propertyVariousImages1Url = url,
+            setUploading: (uploading) =>
+                _isUploadingPropertyVariousImages1 = uploading,
+            setProgress: (progress) =>
+                _progressPropertyVariousImages1 = progress,
+          ),
+        ),
+        AppSpacing.verticalSpaceMD,
+        _buildImagePickerWidget(
+          label: 'صور مختلفة للعقار 2',
+          imageUrl: _propertyVariousImages2Url,
+          isUploading: _isUploadingPropertyVariousImages2,
+          uploadProgress: _progressPropertyVariousImages2,
+          showValidationDot: true,
+          onPickImage: () => _showImageSourceDialog(
+            imageType: 'property_various_2',
+            onUploadComplete: (url) => _propertyVariousImages2Url = url,
+            setUploading: (uploading) =>
+                _isUploadingPropertyVariousImages2 = uploading,
+            setProgress: (progress) =>
+                _progressPropertyVariousImages2 = progress,
+          ),
+        ),
+        AppSpacing.verticalSpaceMD,
+        _buildImagePickerWidget(
+          label: 'صورة لموقع العقار من القمر الصناعي (google earth)',
+          imageUrl: _satelliteLocationImageUrl,
+          isUploading: _isUploadingSatelliteLocation,
+          uploadProgress: _progressSatelliteLocation,
+          showValidationDot: true,
+          onPickImage: () => _showImageSourceDialog(
+            imageType: 'satellite_location',
+            onUploadComplete: (url) => _satelliteLocationImageUrl = url,
+            setUploading: (uploading) =>
+                _isUploadingSatelliteLocation = uploading,
+            setProgress: (progress) =>
+                _progressSatelliteLocation = progress,
+          ),
+        ),
+        AppSpacing.verticalSpaceMD,
+        _buildImagePickerWidget(
+          label: 'صور لموقع القطعة المدنية حسب المخطط العام لبلدية الكويت',
+          imageUrl: _civilPlotMapImageUrl,
+          isUploading: _isUploadingCivilPlotMap,
+          uploadProgress: _progressCivilPlotMap,
+          showValidationDot: true,
+          onPickImage: () => _showImageSourceDialog(
+            imageType: 'civil_plot_map',
+            onUploadComplete: (url) => _civilPlotMapImageUrl = url,
+            setUploading: (uploading) =>
+                _isUploadingCivilPlotMap = uploading,
+            setProgress: (progress) => _progressCivilPlotMap = progress,
+          ),
+        ),
+      ],
     );
   }
 
@@ -504,13 +479,31 @@ class _Step8PropertyImagesScreenState
     required bool isUploading,
     required double uploadProgress,
     required VoidCallback onPickImage,
+    bool showValidationDot = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: AppTypography.fieldTitle,
+        Row(
+          children: [
+            if (showValidationDot) ...[
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: AppColors.validationDot,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              AppSpacing.horizontalSpaceXS,
+            ],
+            Expanded(
+              child: Text(
+                label,
+                style: AppTypography.fieldTitle,
+              ),
+            ),
+          ],
         ),
         AppSpacing.verticalSpaceXS,
         Container(
@@ -655,6 +648,7 @@ class _Step8PropertyImagesScreenState
       controller: _locationAddressTextController,
       label: 'عنوان الموقع',
       hint: 'عنوان الموقع',
+      showValidationDot: true,
     );
   }
 
@@ -663,6 +657,7 @@ class _Step8PropertyImagesScreenState
       controller: _locationAddressLinkController,
       label: 'رابط الموقع',
       hint: 'رابط الموقع',
+      showValidationDot: true,
     );
   }
 }

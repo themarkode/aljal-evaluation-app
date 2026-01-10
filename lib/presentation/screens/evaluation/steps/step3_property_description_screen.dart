@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aljal_evaluation/core/theme/app_colors.dart';
 import 'package:aljal_evaluation/core/theme/app_spacing.dart';
-import 'package:aljal_evaluation/core/routing/route_names.dart';
-import 'package:aljal_evaluation/core/routing/route_arguments.dart';
+import 'package:aljal_evaluation/core/utils/form_field_helpers.dart';
+import 'package:aljal_evaluation/core/routing/step_navigation.dart';
 import 'package:aljal_evaluation/core/constants/dropdown_options.dart';
 import 'package:aljal_evaluation/presentation/providers/evaluation_provider.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_text_field.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_dropdown.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/form_navigation_buttons.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/step_navigation_dropdown.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step_screen_mixin.dart';
 import 'package:aljal_evaluation/data/models/pages_models/property_description_model.dart';
+import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_template.dart';
 
 /// Step 3: Property Description Screen (وصف العقار)
 class Step3PropertyDescriptionScreen extends ConsumerStatefulWidget {
@@ -27,7 +26,8 @@ class Step3PropertyDescriptionScreen extends ConsumerStatefulWidget {
 }
 
 class _Step3PropertyDescriptionScreenState
-    extends ConsumerState<Step3PropertyDescriptionScreen> {
+    extends ConsumerState<Step3PropertyDescriptionScreen>
+    with WidgetsBindingObserver, StepScreenMixin {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -49,6 +49,7 @@ class _Step3PropertyDescriptionScreenState
   @override
   void initState() {
     super.initState();
+    initStepScreen(); // Initialize mixin
 
     // Initialize controllers
     _propertyAgeController = TextEditingController();
@@ -99,6 +100,7 @@ class _Step3PropertyDescriptionScreenState
 
   @override
   void dispose() {
+    disposeStepScreen(); // Clean up mixin
     _propertyAgeController.dispose();
     _exteriorCladdingController.dispose();
     _elevatorCountController.dispose();
@@ -111,139 +113,76 @@ class _Step3PropertyDescriptionScreenState
     super.dispose();
   }
 
+  /// Validate the form - returns true if valid
+  bool _validateForm() {
+    return _formKey.currentState?.validate() ?? false;
+  }
+
+  /// Called when validation fails
+  void _onValidationFailed() {
+    _formKey.currentState?.validate();
+  }
+
   void _saveAndContinue() {
     if (_formKey.currentState?.validate() ?? false) {
-      // Create PropertyDescriptionModel
-      final propertyDescription = PropertyDescriptionModel(
-        propertyCondition: _propertyCondition,
-        finishingType: _finishingType,
-        propertyAge: _propertyAgeController.text.trim().isEmpty
-            ? null
-            : _propertyAgeController.text.trim(),
-        airConditioningType: _airConditioningType,
-        exteriorCladding: _exteriorCladdingController.text.trim().isEmpty
-            ? null
-            : _exteriorCladdingController.text.trim(),
-        elevatorCount: _elevatorCountController.text.trim().isEmpty
-            ? null
-            : int.tryParse(_elevatorCountController.text.trim()),
-        escalatorCount: _escalatorCountController.text.trim().isEmpty
-            ? null
-            : int.tryParse(_escalatorCountController.text.trim()),
-        publicServices: _publicServicesController.text.trim().isEmpty
-            ? null
-            : _publicServicesController.text.trim(),
-        neighboringPropertyTypes:
-            _neighboringPropertyTypesController.text.trim().isEmpty
-                ? null
-                : _neighboringPropertyTypesController.text.trim(),
-        buildingRatio: _buildingRatioController.text.trim().isEmpty
-            ? null
-            : double.tryParse(_buildingRatioController.text.trim()),
-        exteriorFacades: _exteriorFacadesController.text.trim().isEmpty
-            ? null
-            : _exteriorFacadesController.text.trim(),
-        maintenanceNotes: _maintenanceNotesController.text.trim().isEmpty
-            ? null
-            : _maintenanceNotesController.text.trim(),
-      );
+      // Save to memory state only (no Firebase save)
+      saveCurrentDataToState();
 
-      // Update state
-      ref
-          .read(evaluationNotifierProvider.notifier)
-          .updatePropertyDescription(propertyDescription);
-
-      // Navigate to Step 4 (Floors)
-      Navigator.pushReplacementNamed(
+      // Navigate to Step 4
+      StepNavigation.goToNextStep(
         context,
-        RouteNames.formStep4,
-        arguments: FormStepArguments.forStep(
-          step: 4,
-          evaluationId: widget.evaluationId,
-        ),
+        currentStep: 3,
+        evaluationId: widget.evaluationId,
       );
     }
   }
 
   void _goBack() {
-    Navigator.pushReplacementNamed(
+    // Save to memory state only (no Firebase save)
+    saveCurrentDataToState();
+
+    StepNavigation.goToPreviousStep(
       context,
-      RouteNames.formStep2,
-      arguments: FormStepArguments.forStep(
-        step: 2,
-        evaluationId: widget.evaluationId,
-      ),
+      currentStep: 3,
+      evaluationId: widget.evaluationId,
     );
+  }
+
+  /// Save current form data to state without validation
+  @override
+  void saveCurrentDataToState() {
+    final propertyDescription = PropertyDescriptionModel(
+      propertyCondition: _propertyCondition,
+      finishingType: _finishingType,
+      propertyAge: _propertyAgeController.textOrNull,
+      airConditioningType: _airConditioningType,
+      exteriorCladding: _exteriorCladdingController.textOrNull,
+      elevatorCount: _elevatorCountController.intOrNull,
+      escalatorCount: _escalatorCountController.intOrNull,
+      publicServices: _publicServicesController.textOrNull,
+      neighboringPropertyTypes: _neighboringPropertyTypesController.textOrNull,
+      buildingRatio: _buildingRatioController.doubleOrNull,
+      exteriorFacades: _exteriorFacadesController.textOrNull,
+      maintenanceNotes: _maintenanceNotesController.textOrNull,
+    );
+    ref
+        .read(evaluationNotifierProvider.notifier)
+        .updatePropertyDescription(propertyDescription);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          elevation: 0,
-          centerTitle: true,
-          leadingWidth: 70,
-          leading: GestureDetector(
-            onTap: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              RouteNames.evaluationList,
-              (route) => false,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Image.asset(
-                'assets/images/Al_Jal_Logo.png',
-                width: 50,
-                height: 50,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.business_rounded,
-                    color: AppColors.primary,
-                    size: 28,
-                  );
-                },
-              ),
-            ),
-          ),
-          title: StepNavigationDropdown(
-            currentStep: 3,
-            evaluationId: widget.evaluationId,
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
-              onPressed: _goBack,
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        body: SafeArea(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: AppSpacing.screenPaddingMobileInsets,
-                    child: _buildFormFields(),
-                  ),
-                ),
-                // Navigation buttons
-                FormNavigationButtons(
-                  currentStep: 3,
-                  onNext: _saveAndContinue,
-                  onPrevious: _goBack,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return StepScreenTemplate(
+      currentStep: 3,
+      evaluationId: widget.evaluationId,
+      formKey: _formKey,
+      onNext: _saveAndContinue,
+      onPrevious: _goBack,
+      onLogoTap: showExitConfirmationDialog,
+      onSaveToMemory: saveCurrentDataToState,
+      validateBeforeNavigation: _validateForm,
+      onValidationFailed: _onValidationFailed,
+      mobileContent: _buildFormFields(),
     );
   }
 
@@ -256,6 +195,7 @@ class _Step3PropertyDescriptionScreenState
           hint: 'اختر حالة العقار',
           value: _propertyCondition,
           items: DropdownOptions.propertyConditions,
+          showValidationDot: true,
           onChanged: (value) {
             setState(() {
               _propertyCondition = value;
@@ -270,6 +210,7 @@ class _Step3PropertyDescriptionScreenState
           hint: 'اختر نوع التشطيب',
           value: _finishingType,
           items: DropdownOptions.finishingTypes,
+          showValidationDot: true,
           onChanged: (value) {
             setState(() {
               _finishingType = value;
@@ -283,6 +224,7 @@ class _Step3PropertyDescriptionScreenState
           controller: _propertyAgeController,
           label: 'عمر العقار',
           hint: 'عمر العقار بالسنوات',
+          showValidationDot: true,
         ),
         AppSpacing.verticalSpaceMD,
 
@@ -292,6 +234,7 @@ class _Step3PropertyDescriptionScreenState
           hint: 'اختر نوع التكييف',
           value: _airConditioningType,
           items: DropdownOptions.airConditioningTypes,
+          showValidationDot: true,
           onChanged: (value) {
             setState(() {
               _airConditioningType = value;
@@ -305,30 +248,27 @@ class _Step3PropertyDescriptionScreenState
           controller: _exteriorCladdingController,
           label: 'التكسية الخارجية',
           hint: 'التكسية الخارجية',
+          showValidationDot: true,
         ),
         AppSpacing.verticalSpaceMD,
 
-        // Row for Elevator and Escalator counts
-        Row(
-          children: [
-            Expanded(
-              child: CustomTextField(
-                controller: _elevatorCountController,
-                label: 'عدد المصاعد',
-                hint: '0',
-                keyboardType: TextInputType.number,
-              ),
-            ),
-            AppSpacing.horizontalSpaceMD,
-            Expanded(
-              child: CustomTextField(
-                controller: _escalatorCountController,
-                label: 'عدد السلالم المتحركة',
-                hint: '0',
-                keyboardType: TextInputType.number,
-              ),
-            ),
-          ],
+        // Elevator Count
+        CustomTextField(
+          controller: _elevatorCountController,
+          label: 'عدد المصاعد',
+          hint: '0',
+          keyboardType: TextInputType.number,
+          showValidationDot: true,
+        ),
+        AppSpacing.verticalSpaceMD,
+
+        // Escalator Count
+        CustomTextField(
+          controller: _escalatorCountController,
+          label: 'عدد السلالم المتحركة',
+          hint: '0',
+          keyboardType: TextInputType.number,
+          showValidationDot: true,
         ),
         AppSpacing.verticalSpaceMD,
 
@@ -338,6 +278,7 @@ class _Step3PropertyDescriptionScreenState
           label: 'الخدمات والمرافق العامة',
           hint: 'الخدمات والمرافق العامة',
           maxLines: 2,
+          showValidationDot: true,
         ),
         AppSpacing.verticalSpaceMD,
 
@@ -346,6 +287,7 @@ class _Step3PropertyDescriptionScreenState
           controller: _neighboringPropertyTypesController,
           label: 'أنواع العقارات المجاورة',
           hint: 'أنواع العقارات المجاورة',
+          showValidationDot: true,
           maxLines: 2,
         ),
         AppSpacing.verticalSpaceMD,

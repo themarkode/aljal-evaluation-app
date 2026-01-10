@@ -8,13 +8,16 @@ import 'pages_models/income_notes_model.dart';
 import 'pages_models/site_plans_model.dart';
 import 'pages_models/image_model.dart';
 import 'pages_models/additional_data_model.dart';
+import 'pages_models/building_land_cost_model.dart';
+import 'pages_models/economic_income_model.dart';
 
 class EvaluationModel {
   // Core evaluation metadata
   final String? evaluationId; // معرف التقييم
   final DateTime? createdAt; // تاريخ الإنشاء
   final DateTime? updatedAt; // تاريخ آخر تحديث
-  final String? status; // حالة التقييم (draft, completed, etc.)
+  final String? status; // حالة التقييم (draft, completed, deleted)
+  final String? previousStatus; // الحالة السابقة قبل الحذف (للاستعادة)
 
   // Page models - each step of the form
   final GeneralInfoModel? generalInfo; // Step 1
@@ -27,12 +30,15 @@ class EvaluationModel {
   final SitePlansModel? sitePlans; // Step 1.6
   final ImageModel? propertyImages; // Step 1.7
   final AdditionalDataModel? additionalData; // Step 1.8
+  final BuildingLandCostModel? buildingLandCost; // Step 10
+  final EconomicIncomeModel? economicIncome; // Step 11
 
   EvaluationModel({
     this.evaluationId,
     this.createdAt,
     this.updatedAt,
     this.status,
+    this.previousStatus,
     this.generalInfo,
     this.generalPropertyInfo,
     this.propertyDescription,
@@ -43,6 +49,8 @@ class EvaluationModel {
     this.sitePlans,
     this.propertyImages,
     this.additionalData,
+    this.buildingLandCost,
+    this.economicIncome,
   });
 
   factory EvaluationModel.fromJson(Map<String, dynamic> json) {
@@ -55,6 +63,7 @@ class EvaluationModel {
           ? (json['updatedAt'] as Timestamp).toDate()
           : null,
       status: json['status'],
+      previousStatus: json['previousStatus'],
       generalInfo: json['generalInfo'] != null
           ? GeneralInfoModel.fromJson(json['generalInfo'])
           : null,
@@ -85,6 +94,12 @@ class EvaluationModel {
       additionalData: json['additionalData'] != null
           ? AdditionalDataModel.fromJson(json['additionalData'])
           : null,
+      buildingLandCost: json['buildingLandCost'] != null
+          ? BuildingLandCostModel.fromJson(json['buildingLandCost'])
+          : null,
+      economicIncome: json['economicIncome'] != null
+          ? EconomicIncomeModel.fromJson(json['economicIncome'])
+          : null,
     );
   }
 
@@ -94,6 +109,7 @@ class EvaluationModel {
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
       'status': status,
+      'previousStatus': previousStatus,
       'generalInfo': generalInfo?.toJson(),
       'generalPropertyInfo': generalPropertyInfo?.toJson(),
       'propertyDescription': propertyDescription?.toJson(),
@@ -104,6 +120,8 @@ class EvaluationModel {
       'sitePlans': sitePlans?.toJson(),
       'propertyImages': propertyImages?.toJson(),
       'additionalData': additionalData?.toJson(),
+      'buildingLandCost': buildingLandCost?.toJson(),
+      'economicIncome': economicIncome?.toJson(),
     };
   }
 
@@ -113,6 +131,7 @@ class EvaluationModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? status,
+    String? previousStatus,
     GeneralInfoModel? generalInfo,
     GeneralPropertyInfoModel? generalPropertyInfo,
     PropertyDescriptionModel? propertyDescription,
@@ -123,12 +142,15 @@ class EvaluationModel {
     SitePlansModel? sitePlans,
     ImageModel? propertyImages,
     AdditionalDataModel? additionalData,
+    BuildingLandCostModel? buildingLandCost,
+    EconomicIncomeModel? economicIncome,
   }) {
     return EvaluationModel(
       evaluationId: evaluationId ?? this.evaluationId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
       status: status ?? this.status,
+      previousStatus: previousStatus ?? this.previousStatus,
       generalInfo: generalInfo ?? this.generalInfo,
       generalPropertyInfo: generalPropertyInfo ?? this.generalPropertyInfo,
       propertyDescription: propertyDescription ?? this.propertyDescription,
@@ -139,6 +161,8 @@ class EvaluationModel {
       sitePlans: sitePlans ?? this.sitePlans,
       propertyImages: propertyImages ?? this.propertyImages,
       additionalData: additionalData ?? this.additionalData,
+      buildingLandCost: buildingLandCost ?? this.buildingLandCost,
+      economicIncome: economicIncome ?? this.economicIncome,
     );
   }
 }

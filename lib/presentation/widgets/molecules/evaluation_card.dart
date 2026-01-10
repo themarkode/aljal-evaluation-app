@@ -11,6 +11,7 @@ class EvaluationCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onExport;
+  final VoidCallback? onRestore;
 
   const EvaluationCard({
     super.key,
@@ -19,6 +20,7 @@ class EvaluationCard extends StatelessWidget {
     this.onEdit,
     this.onDelete,
     this.onExport,
+    this.onRestore,
   });
 
   @override
@@ -37,8 +39,8 @@ class EvaluationCard extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
+      child: InkWell(
+        onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -60,32 +62,10 @@ class EvaluationCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header row
+                    // Header row - Client name and more options
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Client icon
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColors.navy.withOpacity(0.1),
-                                AppColors.navyLight.withOpacity(0.05),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.person_rounded,
-                            color: AppColors.navy,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        
                         // Client name and info
                         Expanded(
                           child: Column(
@@ -110,8 +90,9 @@ class EvaluationCard extends StatelessWidget {
                           ),
                         ),
                         
-                        // Status badge
-                        _buildStatusBadge(),
+                        const SizedBox(width: 12),
+                        // More options button (left edge in RTL)
+                        _buildMoreOptionsButton(),
                       ],
                     ),
                     
@@ -145,17 +126,17 @@ class EvaluationCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                    ],
-                    
-                    // Divider
+              ],
+
+              // Divider
                     Container(
                       height: 1,
                       color: AppColors.borderLight,
                     ),
-                    
+
                     const SizedBox(height: 12),
-                    
-                    // Bottom row with date and actions
+
+                    // Bottom row with date and status badge
                     Row(
                       children: [
                         // Date
@@ -175,28 +156,9 @@ class EvaluationCard extends StatelessWidget {
                         ),
                         
                         const Spacer(),
-                        
-                        // Action buttons
-                        _buildActionButton(
-                          icon: Icons.edit_rounded,
-                          color: AppColors.navy,
-                          onTap: onEdit,
-                          tooltip: 'تعديل',
-                        ),
-                        const SizedBox(width: 8),
-                        _buildActionButton(
-                          icon: Icons.description_rounded,
-                          color: AppColors.success,
-                          onTap: onExport,
-                          tooltip: 'مستند Word',
-                        ),
-                        const SizedBox(width: 8),
-                        _buildActionButton(
-                          icon: Icons.delete_rounded,
-                          color: AppColors.error,
-                          onTap: onDelete,
-                          tooltip: 'حذف',
-                        ),
+
+                        // Status badge
+                        _buildStatusBadge(),
                       ],
                     ),
                   ],
@@ -214,17 +176,40 @@ class EvaluationCard extends StatelessWidget {
       evaluation.generalPropertyInfo?.plotNumber != null;
 
   Widget _buildStatusBadge() {
-    final isComplete = evaluation.status == 'completed';
+    final status = evaluation.status ?? 'draft';
+    
+    // Determine colors and icon based on status
+    Color badgeColor;
+    IconData badgeIcon;
+    String badgeText;
+    
+    switch (status) {
+      case 'completed':
+        badgeColor = AppColors.success;
+        badgeIcon = Icons.check_circle_rounded;
+        badgeText = 'مكتمل';
+        break;
+      case 'deleted':
+        badgeColor = AppColors.error;
+        badgeIcon = Icons.cancel_rounded;
+        badgeText = 'محذوف';
+        break;
+      default: // draft
+        badgeColor = AppColors.warning;
+        badgeIcon = Icons.pending_rounded;
+        badgeText = 'مسودة';
+    }
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        gradient: isComplete
-            ? AppColors.successGradient
-            : LinearGradient(colors: [AppColors.warning, AppColors.warning.withOpacity(0.8)]),
+        gradient: LinearGradient(
+          colors: [badgeColor, badgeColor.withOpacity(0.8)],
+        ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: (isComplete ? AppColors.success : AppColors.warning).withOpacity(0.3),
+            color: badgeColor.withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -234,13 +219,13 @@ class EvaluationCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isComplete ? Icons.check_circle_rounded : Icons.pending_rounded,
+            badgeIcon,
             size: 14,
             color: Colors.white,
           ),
           const SizedBox(width: 4),
           Text(
-            isComplete ? 'مكتمل' : 'مسودة',
+            badgeText,
             style: AppTypography.badge,
           ),
         ],
@@ -265,26 +250,132 @@ class EvaluationCard extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback? onTap,
-    required String tooltip,
-  }) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          onTap: onTap,
+  Widget _buildMoreOptionsButton() {
+    final isDeleted = evaluation.status == 'deleted';
+    
+    return PopupMenuButton<String>(
+      onSelected: (value) {
+        switch (value) {
+          case 'edit':
+            onEdit?.call();
+            break;
+          case 'export':
+            onExport?.call();
+            break;
+          case 'delete':
+            onDelete?.call();
+            break;
+          case 'restore':
+            onRestore?.call();
+            break;
+        }
+      },
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 8,
+      shadowColor: AppColors.cardShadow,
+      offset: const Offset(0, 8),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.lightGray.withOpacity(0.5),
           borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Icon(icon, size: 18, color: color),
-          ),
+        ),
+        child: Icon(
+          Icons.more_vert_rounded,
+          size: 20,
+          color: AppColors.navy,
         ),
       ),
+      itemBuilder: (context) => [
+        // Show restore option for deleted items
+        if (isDeleted)
+          PopupMenuItem<String>(
+            value: 'restore',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.restore_rounded,
+                  size: 18,
+                  color: Colors.green,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'استعادة',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        // Edit option (not for deleted items)
+        if (!isDeleted)
+          PopupMenuItem<String>(
+            value: 'edit',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.edit_rounded,
+                  size: 18,
+                  color: Colors.black,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'تعديل',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        // Export option
+        PopupMenuItem<String>(
+          value: 'export',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.description_rounded,
+                size: 18,
+                color: const Color(0xFF2B579A), // Word blue color
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Word',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: const Color(0xFF2B579A), // Word blue color
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Delete option - different text for deleted items
+        PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isDeleted ? Icons.delete_forever_rounded : Icons.delete_rounded,
+                size: 18,
+                color: AppColors.error,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                isDeleted ? 'حذف نهائي' : 'حذف',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.error,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

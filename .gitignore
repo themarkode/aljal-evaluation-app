@@ -12,6 +12,13 @@
 .swiftpm/
 migrate_working_dir/
 
+# Sensitive/Secret files - NEVER commit these!
+lib/core/config/app_credentials.dart
+*.env
+.env*
+secrets/
+credentials/
+
 # IntelliJ related
 *.iml
 *.ipr

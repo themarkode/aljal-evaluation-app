@@ -28,22 +28,48 @@ const List<StepInfo> allSteps = [
   StepInfo(stepNumber: 7, title: 'المخططات الموقعية', routeName: RouteNames.formStep7),
   StepInfo(stepNumber: 8, title: 'صور العقار', routeName: RouteNames.formStep8),
   StepInfo(stepNumber: 9, title: 'بيانات إضافية', routeName: RouteNames.formStep9),
+  StepInfo(stepNumber: 10, title: 'تكلفة المباني والأرض', routeName: RouteNames.formStep10),
+  StepInfo(stepNumber: 11, title: 'الدخل الاقتصادي', routeName: RouteNames.formStep11),
 ];
 
 /// A compact dropdown widget for navigating between form steps (for AppBar use)
 class StepNavigationDropdown extends StatelessWidget {
   final int currentStep;
   final String? evaluationId;
+  /// Callback to save current step data to memory before navigating away
+  final void Function()? onSaveToMemory;
+  /// Callback to validate the form before navigation - returns true if valid
+  final bool Function()? validateBeforeNavigation;
+  /// Callback when validation fails (to trigger error pulse animation)
+  final VoidCallback? onValidationFailed;
 
   const StepNavigationDropdown({
     super.key,
     required this.currentStep,
     this.evaluationId,
+    this.onSaveToMemory,
+    this.validateBeforeNavigation,
+    this.onValidationFailed,
   });
 
   void _navigateToStep(BuildContext context, StepInfo step) {
     if (step.stepNumber == currentStep) {
       return;
+    }
+
+    // Validate before navigation if validator is provided
+    if (validateBeforeNavigation != null) {
+      final isValid = validateBeforeNavigation!();
+      if (!isValid) {
+        // Trigger error pulse animation
+        onValidationFailed?.call();
+        return; // Block navigation
+      }
+    }
+
+    // Save current data to memory (NOT to Firebase) before navigating
+    if (onSaveToMemory != null) {
+      onSaveToMemory!();
     }
 
     Navigator.pushReplacementNamed(

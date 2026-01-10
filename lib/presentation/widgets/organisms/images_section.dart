@@ -5,7 +5,6 @@ import 'package:aljal_evaluation/core/theme/app_typography.dart';
 import 'package:aljal_evaluation/core/theme/app_spacing.dart';
 import '../atoms/custom_image_picker.dart';
 import '../molecules/image_gallery.dart';
-import '../atoms/custom_button.dart';
 
 /// Images section organism - manages multiple images
 class ImagesSection extends StatelessWidget {

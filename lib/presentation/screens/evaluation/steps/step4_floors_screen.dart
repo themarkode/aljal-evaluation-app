@@ -3,14 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aljal_evaluation/core/theme/app_colors.dart';
 import 'package:aljal_evaluation/core/theme/app_typography.dart';
 import 'package:aljal_evaluation/core/theme/app_spacing.dart';
-import 'package:aljal_evaluation/core/routing/route_names.dart';
-import 'package:aljal_evaluation/core/routing/route_arguments.dart';
+import 'package:aljal_evaluation/core/utils/form_field_helpers.dart';
+import 'package:aljal_evaluation/core/routing/step_navigation.dart';
 import 'package:aljal_evaluation/presentation/providers/evaluation_provider.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_text_field.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_button.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/form_navigation_buttons.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/step_navigation_dropdown.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step_screen_mixin.dart';
 import 'package:aljal_evaluation/data/models/pages_models/floor_model.dart';
+import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_template.dart';
 
 /// Step 4: Floors Screen
 class Step4FloorsScreen extends ConsumerStatefulWidget {
@@ -25,7 +25,8 @@ class Step4FloorsScreen extends ConsumerStatefulWidget {
   ConsumerState<Step4FloorsScreen> createState() => _Step4FloorsScreenState();
 }
 
-class _Step4FloorsScreenState extends ConsumerState<Step4FloorsScreen> {
+class _Step4FloorsScreenState extends ConsumerState<Step4FloorsScreen>
+    with WidgetsBindingObserver, StepScreenMixin {
   final _formKey = GlobalKey<FormState>();
 
   List<_FloorEntry> _floors = [];
@@ -33,6 +34,7 @@ class _Step4FloorsScreenState extends ConsumerState<Step4FloorsScreen> {
   @override
   void initState() {
     super.initState();
+    initStepScreen(); // Initialize mixin
 
     // Load existing data if editing
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -62,11 +64,22 @@ class _Step4FloorsScreenState extends ConsumerState<Step4FloorsScreen> {
 
   @override
   void dispose() {
+    disposeStepScreen(); // Clean up mixin
     for (var floor in _floors) {
       floor.nameController.dispose();
       floor.detailsController.dispose();
     }
     super.dispose();
+  }
+
+  /// Validate the form - returns true if valid
+  bool _validateForm() {
+    return _formKey.currentState?.validate() ?? false;
+  }
+
+  /// Called when validation fails
+  void _onValidationFailed() {
+    _formKey.currentState?.validate();
   }
 
   void _addFloor() {
@@ -100,126 +113,68 @@ class _Step4FloorsScreenState extends ConsumerState<Step4FloorsScreen> {
 
   void _saveAndContinue() {
     if (_formKey.currentState?.validate() ?? false) {
-      // Create FloorModel list
-      final floors = _floors.map((floor) {
-        return FloorModel(
-          floorName: floor.nameController.text.trim().isEmpty
-              ? null
-              : floor.nameController.text.trim(),
-          floorDetails: floor.detailsController.text.trim().isEmpty
-              ? null
-              : floor.detailsController.text.trim(),
-        );
-      }).toList();
-
-      // Update state
-      ref.read(evaluationNotifierProvider.notifier).updateFloors(floors);
+      // Save to memory state only (no Firebase save)
+      saveCurrentDataToState();
 
       // Navigate to Step 5
-      Navigator.pushReplacementNamed(
+      StepNavigation.goToNextStep(
         context,
-        RouteNames.formStep5,
-        arguments: FormStepArguments.forStep(
-          step: 5,
-          evaluationId: widget.evaluationId,
-        ),
+        currentStep: 4,
+        evaluationId: widget.evaluationId,
       );
     }
   }
 
   void _goBack() {
-    Navigator.pushReplacementNamed(
+    // Save to memory state only (no Firebase save)
+    saveCurrentDataToState();
+
+    StepNavigation.goToPreviousStep(
       context,
-      RouteNames.formStep3,
-      arguments: FormStepArguments.forStep(
-        step: 3,
-        evaluationId: widget.evaluationId,
-      ),
+      currentStep: 4,
+      evaluationId: widget.evaluationId,
     );
+  }
+
+  /// Save current form data to state without validation
+  @override
+  void saveCurrentDataToState() {
+    final floors = _floors.map((floor) {
+      return FloorModel(
+        floorName: floor.nameController.textOrNull,
+        floorDetails: floor.detailsController.textOrNull,
+      );
+    }).toList();
+    ref.read(evaluationNotifierProvider.notifier).updateFloors(floors);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          elevation: 0,
-          centerTitle: true,
-          leadingWidth: 70,
-          leading: GestureDetector(
-            onTap: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              RouteNames.evaluationList,
-              (route) => false,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Image.asset(
-                'assets/images/Al_Jal_Logo.png',
-                width: 50,
-                height: 50,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.business_rounded,
-                    color: AppColors.primary,
-                    size: 28,
-                  );
-                },
-              ),
-            ),
-          ),
-          title: StepNavigationDropdown(
-            currentStep: 4,
-            evaluationId: widget.evaluationId,
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
-              onPressed: _goBack,
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        body: SafeArea(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: AppSpacing.screenPaddingMobileInsets,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Floors count
-                        _buildFloorsCount(),
-                        AppSpacing.verticalSpaceMD,
+    return StepScreenTemplate(
+      currentStep: 4,
+      evaluationId: widget.evaluationId,
+      formKey: _formKey,
+      onNext: _saveAndContinue,
+      onPrevious: _goBack,
+      onLogoTap: showExitConfirmationDialog,
+      onSaveToMemory: saveCurrentDataToState,
+      validateBeforeNavigation: _validateForm,
+      onValidationFailed: _onValidationFailed,
+      mobileContent: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Floors count
+          _buildFloorsCount(),
+          AppSpacing.verticalSpaceMD,
 
-                        // Floors list
-                        ..._buildFloorsList(),
+          // Floors list
+          ..._buildFloorsList(),
 
-                        AppSpacing.verticalSpaceMD,
+          AppSpacing.verticalSpaceMD,
 
-                        // Add floor button
-                        _buildAddFloorButton(),
-                      ],
-                    ),
-                  ),
-                ),
-                // Navigation buttons
-                FormNavigationButtons(
-                  currentStep: 4,
-                  onNext: _saveAndContinue,
-                  onPrevious: _goBack,
-                ),
-              ],
-            ),
-          ),
-        ),
+          // Add floor button
+          _buildAddFloorButton(),
+        ],
       ),
     );
   }
@@ -228,9 +183,22 @@ class _Step4FloorsScreenState extends ConsumerState<Step4FloorsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'عدد الادوار',
-          style: AppTypography.fieldTitle,
+        Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: AppColors.validationDot,
+                shape: BoxShape.circle,
+              ),
+            ),
+            AppSpacing.horizontalSpaceXS,
+            Text(
+              'عدد الادوار',
+              style: AppTypography.fieldTitle,
+            ),
+          ],
         ),
         AppSpacing.verticalSpaceXS,
         Container(
@@ -320,6 +288,7 @@ class _Step4FloorsScreenState extends ConsumerState<Step4FloorsScreen> {
             controller: _floors[index].nameController,
             label: 'اسم/ رقم الدور',
             hint: 'اسم/ رقم الدور',
+            showValidationDot: true,
           ),
 
           AppSpacing.verticalSpaceSM,
@@ -330,6 +299,7 @@ class _Step4FloorsScreenState extends ConsumerState<Step4FloorsScreen> {
             label: 'تفاصيل الدور',
             hint: 'تفاصيل الدور',
             maxLines: 3,
+            showValidationDot: true,
           ),
         ],
       ),

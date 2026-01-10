@@ -4,8 +4,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_spacing.dart';
 
-/// Custom text field with validation dot and RTL support
-class CustomTextField extends StatelessWidget {
+/// Custom text field with validation dot, RTL support, and error blink animation
+class CustomTextField extends StatefulWidget {
   final String? label;
   final String? hint;
   final String? initialValue;
@@ -31,6 +31,9 @@ class CustomTextField extends StatelessWidget {
   final void Function(String)? onFieldSubmitted;
   final AutovalidateMode? autovalidateMode;
   final TextCapitalization textCapitalization;
+  /// Notifier to trigger error blink animation. Increment value to trigger blink.
+  /// Use the errorBlinkTrigger from StepScreenMixin for centralized control.
+  final ValueNotifier<int>? errorBlinkTrigger;
 
   const CustomTextField({
     super.key,
@@ -59,7 +62,77 @@ class CustomTextField extends StatelessWidget {
     this.onFieldSubmitted,
     this.autovalidateMode,
     this.textCapitalization = TextCapitalization.none,
+    this.errorBlinkTrigger,
   });
+
+  @override
+  State<CustomTextField> createState() => _CustomTextFieldState();
+}
+
+class _CustomTextFieldState extends State<CustomTextField>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _blinkController;
+  late Animation<double> _blinkAnimation;
+  String? _currentError;
+
+  @override
+  void initState() {
+    super.initState();
+    _blinkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _blinkAnimation = Tween<double>(begin: 1.0, end: 0.2).animate(
+      CurvedAnimation(parent: _blinkController, curve: Curves.easeInOut),
+    );
+
+    // Listen to blink trigger from mixin
+    widget.errorBlinkTrigger?.addListener(_onBlinkTrigger);
+  }
+
+  @override
+  void didUpdateWidget(covariant CustomTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.errorBlinkTrigger != oldWidget.errorBlinkTrigger) {
+      oldWidget.errorBlinkTrigger?.removeListener(_onBlinkTrigger);
+      widget.errorBlinkTrigger?.addListener(_onBlinkTrigger);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.errorBlinkTrigger?.removeListener(_onBlinkTrigger);
+    _blinkController.dispose();
+    super.dispose();
+  }
+
+  void _onBlinkTrigger() {
+    // Only blink if field has error
+    if (_currentError != null && _currentError!.isNotEmpty) {
+      _triggerBlink();
+    }
+  }
+
+  void _triggerBlink() async {
+    // Blink 3 times quickly (on-off-on-off-on-off)
+    for (int i = 0; i < 3; i++) {
+      await _blinkController.forward();
+      await _blinkController.reverse();
+    }
+  }
+
+  String? _validate(String? value) {
+    final error = widget.validator?.call(value);
+    // Update current error for blink check
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _currentError = error;
+        });
+      }
+    });
+    return error;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,11 +141,26 @@ class CustomTextField extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Label with validation dot
-        if (label != null) ...[
+        if (widget.label != null) ...[
           Row(
             children: [
-              // Validation dot
-              if (showValidationDot) ...[
+              // Label text (appears on RIGHT in RTL)
+              Text(
+                widget.label!,
+                style: AppTypography.fieldTitle,
+              ),
+              // Required indicator
+              if (widget.isRequired)
+                Text(
+                  ' *',
+                  style: AppTypography.fieldTitle.copyWith(
+                    color: AppColors.error,
+                  ),
+                ),
+              // Spacer to push dot to the left in RTL
+              const Spacer(),
+              // Validation dot (appears on LEFT in RTL)
+              if (widget.showValidationDot) ...[
                 Container(
                   width: 8,
                   height: 8,
@@ -81,102 +169,99 @@ class CustomTextField extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                 ),
-                AppSpacing.horizontalSpaceXS,
+                const SizedBox(width: 22.5), // Space from left edge in RTL
               ],
-              // Label text
-              Expanded(
-                child: Text(
-                  label!,
-                  style: AppTypography.fieldTitle,
-                ),
-              ),
-              // Required indicator
-              if (isRequired)
-                Text(
-                  ' *',
-                  style: AppTypography.fieldTitle.copyWith(
-                    color: AppColors.error,
-                  ),
-                ),
             ],
           ),
           AppSpacing.verticalSpaceXS,
         ],
-        
+
         // Text field
-        TextFormField(
-          controller: controller,
-          initialValue: initialValue,
-          validator: validator,
-          onChanged: onChanged,
-          onSaved: onSaved,
-          keyboardType: keyboardType,
-          textInputAction: textInputAction,
-          maxLines: maxLines,
-          minLines: minLines,
-          maxLength: maxLength,
-          enabled: enabled,
-          readOnly: readOnly,
-          obscureText: obscureText,
-          inputFormatters: inputFormatters,
-          focusNode: focusNode,
-          onTap: onTap,
-          onFieldSubmitted: onFieldSubmitted,
-          autovalidateMode: autovalidateMode,
-          textCapitalization: textCapitalization,
-          textDirection: TextDirection.rtl,
-          style: AppTypography.inputText,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: AppTypography.placeholder,
-            prefixIcon: prefixIcon,
-            suffixIcon: suffixIcon,
-            filled: true,
-            fillColor: enabled ? AppColors.white : AppColors.lightGray,
-            contentPadding: AppSpacing.fieldPadding,
-            border: OutlineInputBorder(
-              borderRadius: AppSpacing.radiusMD,
-              borderSide: BorderSide(
-                color: AppColors.border,
-                width: AppSpacing.borderWidth,
+        AnimatedBuilder(
+          animation: _blinkAnimation,
+          builder: (context, child) {
+            return TextFormField(
+              controller: widget.controller,
+              initialValue: widget.initialValue,
+              validator: _validate,
+              onChanged: widget.onChanged,
+              onSaved: widget.onSaved,
+              keyboardType: widget.keyboardType,
+              textInputAction: widget.textInputAction,
+              maxLines: widget.maxLines,
+              minLines: widget.minLines,
+              maxLength: widget.maxLength,
+              enabled: widget.enabled,
+              readOnly: widget.readOnly,
+              obscureText: widget.obscureText,
+              inputFormatters: widget.inputFormatters,
+              focusNode: widget.focusNode,
+              onTap: widget.onTap,
+              onFieldSubmitted: widget.onFieldSubmitted,
+              autovalidateMode: widget.autovalidateMode,
+              textCapitalization: widget.textCapitalization,
+              textDirection: TextDirection.rtl,
+              style: AppTypography.inputText,
+              decoration: InputDecoration(
+                hintText: widget.hint,
+                hintStyle: AppTypography.placeholder,
+                prefixIcon: widget.prefixIcon,
+                suffixIcon: widget.suffixIcon,
+                filled: true,
+                fillColor:
+                    widget.enabled ? AppColors.white : AppColors.lightGray,
+                contentPadding: AppSpacing.fieldPadding,
+                // Animated error style - opacity changes during blink
+                errorStyle: TextStyle(
+                  color: AppColors.error.withOpacity(_blinkAnimation.value),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: AppSpacing.radiusMD,
+                  borderSide: BorderSide(
+                    color: AppColors.border,
+                    width: AppSpacing.borderWidth,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: AppSpacing.radiusMD,
+                  borderSide: BorderSide(
+                    color: AppColors.border,
+                    width: AppSpacing.borderWidth,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: AppSpacing.radiusMD,
+                  borderSide: BorderSide(
+                    color: AppColors.primary,
+                    width: AppSpacing.borderWidthThick,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: AppSpacing.radiusMD,
+                  borderSide: BorderSide(
+                    color: AppColors.error,
+                    width: AppSpacing.borderWidth,
+                  ),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: AppSpacing.radiusMD,
+                  borderSide: BorderSide(
+                    color: AppColors.error,
+                    width: AppSpacing.borderWidthThick,
+                  ),
+                ),
+                disabledBorder: OutlineInputBorder(
+                  borderRadius: AppSpacing.radiusMD,
+                  borderSide: BorderSide(
+                    color: AppColors.midGray,
+                    width: AppSpacing.borderWidth,
+                  ),
+                ),
               ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: AppSpacing.radiusMD,
-              borderSide: BorderSide(
-                color: AppColors.border,
-                width: AppSpacing.borderWidth,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: AppSpacing.radiusMD,
-              borderSide: BorderSide(
-                color: AppColors.primary,
-                width: AppSpacing.borderWidthThick,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: AppSpacing.radiusMD,
-              borderSide: BorderSide(
-                color: AppColors.error,
-                width: AppSpacing.borderWidth,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: AppSpacing.radiusMD,
-              borderSide: BorderSide(
-                color: AppColors.error,
-                width: AppSpacing.borderWidthThick,
-              ),
-            ),
-            disabledBorder: OutlineInputBorder(
-              borderRadius: AppSpacing.radiusMD,
-              borderSide: BorderSide(
-                color: AppColors.midGray,
-                width: AppSpacing.borderWidth,
-              ),
-            ),
-          ),
+            );
+          },
         ),
       ],
     );

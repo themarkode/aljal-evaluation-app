@@ -3,17 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aljal_evaluation/core/theme/app_colors.dart';
 import 'package:aljal_evaluation/core/theme/app_typography.dart';
 import 'package:aljal_evaluation/core/theme/app_spacing.dart';
-import 'package:aljal_evaluation/core/routing/route_names.dart';
-import 'package:aljal_evaluation/core/routing/route_arguments.dart';
+import 'package:aljal_evaluation/core/utils/form_field_helpers.dart';
+import 'package:aljal_evaluation/core/routing/step_navigation.dart';
 import 'package:aljal_evaluation/presentation/providers/evaluation_provider.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_text_field.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_date_picker.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/form_navigation_buttons.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/step_navigation_dropdown.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step_screen_mixin.dart';
 import 'package:aljal_evaluation/data/models/pages_models/additional_data_model.dart';
-import 'package:aljal_evaluation/presentation/shared/responsive/responsive_builder.dart';
+import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_template.dart';
 
-/// Step 9: Additional Data Screen - FINAL FORM STEP
+/// Step 9: Additional Data Screen
 class Step9AdditionalDataScreen extends ConsumerStatefulWidget {
   final String? evaluationId;
 
@@ -28,7 +27,7 @@ class Step9AdditionalDataScreen extends ConsumerStatefulWidget {
 }
 
 class _Step9AdditionalDataScreenState
-    extends ConsumerState<Step9AdditionalDataScreen> {
+    extends ConsumerState<Step9AdditionalDataScreen> with WidgetsBindingObserver, StepScreenMixin {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -44,6 +43,7 @@ class _Step9AdditionalDataScreenState
   @override
   void initState() {
     super.initState();
+    initStepScreen(); // Initialize mixin
 
     // Initialize controllers
     _evaluationPurposeController = TextEditingController();
@@ -78,6 +78,7 @@ class _Step9AdditionalDataScreenState
 
   @override
   void dispose() {
+    disposeStepScreen(); // Clean up mixin
     _evaluationPurposeController.dispose();
     _buildingSystemController.dispose();
     _buildingRatioController.dispose();
@@ -86,187 +87,70 @@ class _Step9AdditionalDataScreenState
     super.dispose();
   }
 
-  Future<void> _saveAndComplete() async {
+  /// Validate the form - returns true if valid
+  bool _validateForm() {
+    return _formKey.currentState?.validate() ?? false;
+  }
+
+  /// Called when validation fails
+  void _onValidationFailed() {
+    _formKey.currentState?.validate();
+  }
+
+  void _saveAndContinue() {
     if (_formKey.currentState?.validate() ?? false) {
-      try {
-        // Show loading indicator
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
+      // Save to memory state only (no Firebase save)
+      saveCurrentDataToState();
 
-        // Create AdditionalDataModel
-        final additionalData = AdditionalDataModel(
-          evaluationPurpose: _evaluationPurposeController.text.trim().isEmpty
-              ? null
-              : _evaluationPurposeController.text.trim(),
-          buildingSystem: _buildingSystemController.text.trim().isEmpty
-              ? null
-              : _buildingSystemController.text.trim(),
-          buildingRatio: _buildingRatioController.text.trim().isEmpty
-              ? null
-              : _buildingRatioController.text.trim(),
-          accordingTo: _accordingToController.text.trim().isEmpty
-              ? null
-              : _accordingToController.text.trim(),
-          totalValue: _totalValueController.text.trim().isEmpty
-              ? null
-              : double.tryParse(_totalValueController.text.trim()),
-          evaluationIssueDate: _evaluationIssueDate,
-        );
-
-        // Update state with additional data
-        ref
-            .read(evaluationNotifierProvider.notifier)
-            .updateAdditionalData(additionalData);
-
-        // Update status to completed
-        ref.read(evaluationNotifierProvider.notifier).updateStatus('completed');
-
-        // Save evaluation to Firebase
-        await ref.read(evaluationNotifierProvider.notifier).saveEvaluation();
-
-        // Close loading dialog
-        if (mounted) {
-          Navigator.pop(context);
-        }
-
-        // Show success message
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('تم حفظ النموذج بنجاح'),
-              duration: Duration(seconds: 2),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-
-        // Navigate back to evaluation list and clear form state
-        if (mounted) {
-          // Reset evaluation state for next form
-          ref.read(evaluationNotifierProvider.notifier).resetEvaluation();
-
-          // Navigate to evaluation list
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            RouteNames.evaluationList,
-            (route) => false,
-          );
-        }
-      } catch (e) {
-        // Close loading dialog
-        if (mounted) {
-          Navigator.pop(context);
-        }
-
-        // Show error message
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('فشل حفظ النموذج: $e'),
-              duration: const Duration(seconds: 3),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
+      // Navigate to Step 10
+      StepNavigation.goToNextStep(
+        context,
+        currentStep: 9,
+        evaluationId: widget.evaluationId,
+      );
     }
   }
 
   void _goBack() {
-    Navigator.pushReplacementNamed(
+    // Save to memory state only (no Firebase save)
+    saveCurrentDataToState();
+
+    StepNavigation.goToPreviousStep(
       context,
-      RouteNames.formStep8,
-      arguments: FormStepArguments.forStep(
-        step: 8,
+      currentStep: 9,
         evaluationId: widget.evaluationId,
-      ),
     );
+  }
+
+  /// Save current form data to state without validation
+  @override
+  void saveCurrentDataToState() {
+    final additionalData = AdditionalDataModel(
+      evaluationPurpose: _evaluationPurposeController.textOrNull,
+      buildingSystem: _buildingSystemController.textOrNull,
+      buildingRatio: _buildingRatioController.textOrNull,
+      accordingTo: _accordingToController.textOrNull,
+      totalValue: _totalValueController.doubleOrNull,
+      evaluationIssueDate: _evaluationIssueDate,
+    );
+    ref.read(evaluationNotifierProvider.notifier).updateAdditionalData(additionalData);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          elevation: 0,
-          centerTitle: true,
-          leadingWidth: 70,
-          leading: GestureDetector(
-            onTap: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              RouteNames.evaluationList,
-              (route) => false,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Image.asset(
-                'assets/images/Al_Jal_Logo.png',
-                width: 50,
-                height: 50,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.business_rounded,
-                    color: AppColors.primary,
-                    size: 28,
-                  );
-                },
-              ),
-            ),
-          ),
-          title: StepNavigationDropdown(
-            currentStep: 9,
-            evaluationId: widget.evaluationId,
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
-              onPressed: _goBack,
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        body: SafeArea(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: AppSpacing.screenPaddingMobileInsets,
-                    child: ResponsiveBuilder(
-                      builder: (context, deviceType) {
-                        switch (deviceType) {
-                          case DeviceType.mobile:
-                            return _buildMobileLayout();
-                          case DeviceType.tablet:
-                            return _buildTabletLayout();
-                          case DeviceType.desktop:
-                            return _buildDesktopLayout();
-                        }
-                      },
-                    ),
-                  ),
-                ),
-                // Navigation buttons
-                FormNavigationButtons(
-                  currentStep: 9,
-                  onNext: _saveAndComplete,
-                  onPrevious: _goBack,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return StepScreenTemplate(
+      currentStep: 9,
+      evaluationId: widget.evaluationId,
+      formKey: _formKey,
+                    onNext: _saveAndContinue,
+                    onPrevious: _goBack,
+      onLogoTap: showExitConfirmationDialog,
+      onSaveToMemory: saveCurrentDataToState,
+      validateBeforeNavigation: _validateForm,
+      onValidationFailed: _onValidationFailed,
+      mobileContent: _buildMobileLayout(),
+      tabletContent: _buildTabletLayout(),
+      desktopContent: _buildDesktopLayout(),
     );
   }
 
@@ -275,33 +159,18 @@ class _Step9AdditionalDataScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Evaluation Purpose Section
-        Text(
-          'الغرض من التقييم',
-          style: AppTypography.fieldTitle,
-        ),
-        AppSpacing.verticalSpaceSM,
         _buildEvaluationPurposeField(),
-        AppSpacing.verticalSpaceLG,
+        AppSpacing.verticalSpaceMD,
 
         // Regulatory Opinion Section
-        Text(
-          'الرأي التنظيمي',
-          style: AppTypography.fieldTitle,
-        ),
-        AppSpacing.verticalSpaceSM,
         _buildBuildingSystemField(),
         AppSpacing.verticalSpaceMD,
         _buildBuildingRatioField(),
         AppSpacing.verticalSpaceMD,
         _buildAccordingToField(),
-        AppSpacing.verticalSpaceLG,
+        AppSpacing.verticalSpaceMD,
 
         // Property Valuation Section
-        Text(
-          'تقدير العقار',
-          style: AppTypography.fieldTitle,
-        ),
-        AppSpacing.verticalSpaceSM,
         _buildTotalValueField(),
         AppSpacing.verticalSpaceMD,
         _buildEvaluationIssueDateField(),
@@ -314,20 +183,10 @@ class _Step9AdditionalDataScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Evaluation Purpose Section
-        Text(
-          'الغرض من التقييم',
-          style: AppTypography.fieldTitle,
-        ),
-        AppSpacing.verticalSpaceSM,
         _buildEvaluationPurposeField(),
-        AppSpacing.verticalSpaceLG,
+        AppSpacing.verticalSpaceMD,
 
         // Regulatory Opinion Section
-        Text(
-          'الرأي التنظيمي',
-          style: AppTypography.fieldTitle,
-        ),
-        AppSpacing.verticalSpaceSM,
         Row(
           children: [
             Expanded(child: _buildBuildingSystemField()),
@@ -337,14 +196,9 @@ class _Step9AdditionalDataScreenState
         ),
         AppSpacing.verticalSpaceMD,
         _buildAccordingToField(),
-        AppSpacing.verticalSpaceLG,
+        AppSpacing.verticalSpaceMD,
 
         // Property Valuation Section
-        Text(
-          'تقدير العقار',
-          style: AppTypography.fieldTitle,
-        ),
-        AppSpacing.verticalSpaceSM,
         Row(
           children: [
             Expanded(child: _buildTotalValueField()),
@@ -366,6 +220,7 @@ class _Step9AdditionalDataScreenState
       controller: _evaluationPurposeController,
       label: 'الغرض من التقييم',
       hint: 'الغرض من التقييم',
+      showValidationDot: true,
     );
   }
 
@@ -374,6 +229,7 @@ class _Step9AdditionalDataScreenState
       controller: _buildingSystemController,
       label: 'نظام البناء',
       hint: 'نظام البناء',
+      showValidationDot: true,
     );
   }
 
@@ -382,6 +238,7 @@ class _Step9AdditionalDataScreenState
       controller: _buildingRatioController,
       label: 'النسبة',
       hint: 'النسبة',
+      showValidationDot: true,
     );
   }
 
@@ -390,6 +247,7 @@ class _Step9AdditionalDataScreenState
       controller: _accordingToController,
       label: 'حسب',
       hint: 'حسب',
+      showValidationDot: true,
     );
   }
 
@@ -399,14 +257,15 @@ class _Step9AdditionalDataScreenState
       label: 'القيمة الإجمالية',
       hint: '0.00',
       keyboardType: TextInputType.number,
+      showValidationDot: true,
       suffixIcon: Padding(
         padding: AppSpacing.horizontalSM,
         child: Center(
           widthFactor: 1.0,
           child: Text(
-            'د.ك',
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+        'د.ك',
+        style: AppTypography.bodyMedium.copyWith(
+          color: AppColors.textSecondary,
             ),
           ),
         ),
@@ -418,6 +277,7 @@ class _Step9AdditionalDataScreenState
     return CustomDatePicker(
       label: 'تاريخ إصدار التقييم النهائي',
       value: _evaluationIssueDate,
+      showValidationDot: true,
       onChanged: (date) {
         setState(() {
           _evaluationIssueDate = date;

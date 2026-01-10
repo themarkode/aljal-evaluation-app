@@ -83,8 +83,9 @@ class ImageService {
         );
         downloadURLs.add(url);
       } catch (e) {
-        print('Failed to upload image ${i + 1}: $e');
-        // Continue with other images even if one fails
+        // Skip failed image and continue with others
+        // Error: Failed to upload image ${i + 1}: $e
+        continue;
       }
     }
     
@@ -248,7 +249,7 @@ class ImageService {
       Reference ref = _storage.refFromURL(imageUrl);
       return await ref.getMetadata();
     } catch (e) {
-      print('Failed to get image metadata: $e');
+      // Return null if metadata fetch fails
       return null;
     }
   }

@@ -43,24 +43,10 @@ class CustomImagePicker extends StatelessWidget {
         if (label != null) ...[
           Row(
             children: [
-              // Validation dot
-              if (showValidationDot) ...[
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.validationDot,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                AppSpacing.horizontalSpaceXS,
-              ],
-              // Label text
-              Expanded(
-                child: Text(
-                  label!,
-                  style: AppTypography.fieldTitle,
-                ),
+              // Label text (appears on RIGHT in RTL)
+              Text(
+                label!,
+                style: AppTypography.fieldTitle,
               ),
               // Required indicator
               if (isRequired)
@@ -70,6 +56,20 @@ class CustomImagePicker extends StatelessWidget {
                     color: AppColors.error,
                   ),
                 ),
+              // Spacer to push dot to the left in RTL
+              const Spacer(),
+              // Validation dot (appears on LEFT in RTL)
+              if (showValidationDot) ...[
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppColors.validationDot,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 22.5), // Space from left edge in RTL
+              ],
             ],
           ),
           AppSpacing.verticalSpaceXS,

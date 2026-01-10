@@ -3,11 +3,18 @@ class RouteNames {
   RouteNames._();
 
   // ============================================================
-  // MAIN ROUTES
+  // AUTH ROUTES
   // ============================================================
   
-  /// Initial route - Evaluation list screen
+  /// Initial route - Splash screen (checks auth)
   static const String initial = '/';
+  
+  /// Login screen
+  static const String login = '/login';
+
+  // ============================================================
+  // MAIN ROUTES
+  // ============================================================
   
   /// Evaluation list screen (التقارير)
   static const String evaluationList = '/evaluations';
@@ -20,6 +27,9 @@ class RouteNames {
   
   /// View evaluation details
   static const String viewEvaluation = '/evaluations/view';
+  
+  /// Statistics page
+  static const String statistics = '/statistics';
 
   // ============================================================
   // FORM STEP ROUTES
@@ -51,12 +61,18 @@ class RouteNames {
   
   /// Form Step 9: بيانات إضافية (Additional Data)
   static const String formStep9 = '/form/step9';
+  
+  /// Form Step 10: تكلفة المباني والأرض (Building and Land Cost)
+  static const String formStep10 = '/form/step10';
+  
+  /// Form Step 11: الدخل الاقتصادي (Economic Income)
+  static const String formStep11 = '/form/step11';
 
   // ============================================================
   // HELPER METHODS
   // ============================================================
   
-  /// Get form step route by index (1-9)
+  /// Get form step route by index (1-11)
   static String getFormStepRoute(int step) {
     switch (step) {
       case 1:
@@ -77,6 +93,10 @@ class RouteNames {
         return formStep8;
       case 9:
         return formStep9;
+      case 10:
+        return formStep10;
+      case 11:
+        return formStep11;
       default:
         return formStep1;
     }
@@ -103,6 +123,10 @@ class RouteNames {
         return 8;
       case formStep9:
         return 9;
+      case formStep10:
+        return 10;
+      case formStep11:
+        return 11;
       default:
         return 1;
     }

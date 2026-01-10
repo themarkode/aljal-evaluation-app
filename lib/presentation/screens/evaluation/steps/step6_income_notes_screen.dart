@@ -3,14 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aljal_evaluation/core/theme/app_colors.dart';
 import 'package:aljal_evaluation/core/theme/app_typography.dart';
 import 'package:aljal_evaluation/core/theme/app_spacing.dart';
-import 'package:aljal_evaluation/core/routing/route_names.dart';
-import 'package:aljal_evaluation/core/routing/route_arguments.dart';
+import 'package:aljal_evaluation/core/utils/form_field_helpers.dart';
+import 'package:aljal_evaluation/core/routing/step_navigation.dart';
 import 'package:aljal_evaluation/presentation/providers/evaluation_provider.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_text_field.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/form_navigation_buttons.dart';
-import 'package:aljal_evaluation/presentation/widgets/molecules/step_navigation_dropdown.dart';
+import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step_screen_mixin.dart';
 import 'package:aljal_evaluation/data/models/pages_models/income_notes_model.dart';
-import 'package:aljal_evaluation/presentation/shared/responsive/responsive_builder.dart';
+import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_template.dart';
 
 /// Step 6: Income Notes Screen
 class Step6IncomeNotesScreen extends ConsumerStatefulWidget {
@@ -26,8 +25,8 @@ class Step6IncomeNotesScreen extends ConsumerStatefulWidget {
       _Step6IncomeNotesScreenState();
 }
 
-class _Step6IncomeNotesScreenState
-    extends ConsumerState<Step6IncomeNotesScreen> {
+class _Step6IncomeNotesScreenState extends ConsumerState<Step6IncomeNotesScreen>
+    with WidgetsBindingObserver, StepScreenMixin {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -44,6 +43,7 @@ class _Step6IncomeNotesScreenState
   @override
   void initState() {
     super.initState();
+    initStepScreen(); // Initialize mixin
 
     // Initialize controllers
     _tenantTypeController = TextEditingController();
@@ -80,6 +80,7 @@ class _Step6IncomeNotesScreenState
 
   @override
   void dispose() {
+    disposeStepScreen(); // Clean up mixin
     _tenantTypeController.dispose();
     _incomeDetailsController.dispose();
     _unitDescriptionController.dispose();
@@ -87,6 +88,16 @@ class _Step6IncomeNotesScreenState
     _vacancyRateController.dispose();
     _rentalValueVerificationController.dispose();
     super.dispose();
+  }
+
+  /// Validate the form - returns true if valid
+  bool _validateForm() {
+    return _formKey.currentState?.validate() ?? false;
+  }
+
+  /// Called when validation fails
+  void _onValidationFailed() {
+    _formKey.currentState?.validate();
   }
 
   void _incrementUnitCount() {
@@ -105,137 +116,61 @@ class _Step6IncomeNotesScreenState
 
   void _saveAndContinue() {
     if (_formKey.currentState?.validate() ?? false) {
-      // Create IncomeNotesModel
-      final incomeNotes = IncomeNotesModel(
-        tenantType: _tenantTypeController.text.trim().isEmpty
-            ? null
-            : _tenantTypeController.text.trim(),
-        unitCount: _unitCount,
-        incomeDetails: _incomeDetailsController.text.trim().isEmpty
-            ? null
-            : _incomeDetailsController.text.trim(),
-        unitDescription: _unitDescriptionController.text.trim().isEmpty
-            ? null
-            : _unitDescriptionController.text.trim(),
-        unitType: _unitTypeController.text.trim().isEmpty
-            ? null
-            : _unitTypeController.text.trim(),
-        vacancyRate: _vacancyRateController.text.trim().isEmpty
-            ? null
-            : double.tryParse(_vacancyRateController.text.trim()),
-        rentalValueVerification:
-            _rentalValueVerificationController.text.trim().isEmpty
-                ? null
-                : _rentalValueVerificationController.text.trim(),
-      );
-
-      // Update state
-      ref
-          .read(evaluationNotifierProvider.notifier)
-          .updateIncomeNotes(incomeNotes);
+      // Save to memory state only (no Firebase save)
+      saveCurrentDataToState();
 
       // Navigate to Step 7
-      Navigator.pushReplacementNamed(
+      StepNavigation.goToNextStep(
         context,
-        RouteNames.formStep7,
-        arguments: FormStepArguments.forStep(
-          step: 7,
-          evaluationId: widget.evaluationId,
-        ),
+        currentStep: 6,
+        evaluationId: widget.evaluationId,
       );
     }
   }
 
   void _goBack() {
-    Navigator.pushReplacementNamed(
+    // Save to memory state only (no Firebase save)
+    saveCurrentDataToState();
+
+    StepNavigation.goToPreviousStep(
       context,
-      RouteNames.formStep5,
-      arguments: FormStepArguments.forStep(
-        step: 5,
-        evaluationId: widget.evaluationId,
-      ),
+      currentStep: 6,
+      evaluationId: widget.evaluationId,
     );
+  }
+
+  /// Save current form data to state without validation
+  @override
+  void saveCurrentDataToState() {
+    final incomeNotes = IncomeNotesModel(
+      tenantType: _tenantTypeController.textOrNull,
+      unitCount: _unitCount,
+      incomeDetails: _incomeDetailsController.textOrNull,
+      unitDescription: _unitDescriptionController.textOrNull,
+      unitType: _unitTypeController.textOrNull,
+      vacancyRate: _vacancyRateController.doubleOrNull,
+      rentalValueVerification: _rentalValueVerificationController.textOrNull,
+    );
+    ref
+        .read(evaluationNotifierProvider.notifier)
+        .updateIncomeNotes(incomeNotes);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          elevation: 0,
-          centerTitle: true,
-          leadingWidth: 70,
-          leading: GestureDetector(
-            onTap: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              RouteNames.evaluationList,
-              (route) => false,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Image.asset(
-                'assets/images/Al_Jal_Logo.png',
-                width: 50,
-                height: 50,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.business_rounded,
-                    color: AppColors.primary,
-                    size: 28,
-                  );
-                },
-              ),
-            ),
-          ),
-          title: StepNavigationDropdown(
-            currentStep: 6,
-            evaluationId: widget.evaluationId,
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
-              onPressed: _goBack,
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        body: SafeArea(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: AppSpacing.screenPaddingMobileInsets,
-                    child: ResponsiveBuilder(
-                      builder: (context, deviceType) {
-                        switch (deviceType) {
-                          case DeviceType.mobile:
-                            return _buildMobileLayout();
-                          case DeviceType.tablet:
-                            return _buildTabletLayout();
-                          case DeviceType.desktop:
-                            return _buildDesktopLayout();
-                        }
-                      },
-                    ),
-                  ),
-                ),
-                // Navigation buttons
-                FormNavigationButtons(
-                  currentStep: 6,
-                  onNext: _saveAndContinue,
-                  onPrevious: _goBack,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return StepScreenTemplate(
+      currentStep: 6,
+      evaluationId: widget.evaluationId,
+      formKey: _formKey,
+      onNext: _saveAndContinue,
+      onPrevious: _goBack,
+      onLogoTap: showExitConfirmationDialog,
+      onSaveToMemory: saveCurrentDataToState,
+      validateBeforeNavigation: _validateForm,
+      onValidationFailed: _onValidationFailed,
+      mobileContent: _buildMobileLayout(),
+      tabletContent: _buildTabletLayout(),
+      desktopContent: _buildDesktopLayout(),
     );
   }
 
@@ -301,6 +236,7 @@ class _Step6IncomeNotesScreenState
       controller: _tenantTypeController,
       label: 'نوع المستأجرين',
       hint: 'نوع المستأجرين',
+      showValidationDot: true,
     );
   }
 

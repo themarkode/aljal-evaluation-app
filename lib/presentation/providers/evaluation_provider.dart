@@ -9,6 +9,8 @@ import 'package:aljal_evaluation/data/models/pages_models/income_notes_model.dar
 import 'package:aljal_evaluation/data/models/pages_models/site_plans_model.dart';
 import 'package:aljal_evaluation/data/models/pages_models/image_model.dart';
 import 'package:aljal_evaluation/data/models/pages_models/additional_data_model.dart';
+import 'package:aljal_evaluation/data/models/pages_models/building_land_cost_model.dart';
+import 'package:aljal_evaluation/data/models/pages_models/economic_income_model.dart';
 import 'package:aljal_evaluation/data/services/evaluation_service.dart';
 
 part 'evaluation_provider.g.dart';
@@ -48,6 +50,8 @@ class EvaluationNotifier extends _$EvaluationNotifier {
       sitePlans: state.sitePlans,
       propertyImages: state.propertyImages,
       additionalData: state.additionalData,
+      buildingLandCost: state.buildingLandCost,
+      economicIncome: state.economicIncome,
     );
   }
   
@@ -68,6 +72,8 @@ class EvaluationNotifier extends _$EvaluationNotifier {
       sitePlans: state.sitePlans,
       propertyImages: state.propertyImages,
       additionalData: state.additionalData,
+      buildingLandCost: state.buildingLandCost,
+      economicIncome: state.economicIncome,
     );
   }
   
@@ -88,6 +94,8 @@ class EvaluationNotifier extends _$EvaluationNotifier {
       sitePlans: state.sitePlans,
       propertyImages: state.propertyImages,
       additionalData: state.additionalData,
+      buildingLandCost: state.buildingLandCost,
+      economicIncome: state.economicIncome,
     );
   }
   
@@ -108,6 +116,8 @@ class EvaluationNotifier extends _$EvaluationNotifier {
       sitePlans: state.sitePlans,
       propertyImages: state.propertyImages,
       additionalData: state.additionalData,
+      buildingLandCost: state.buildingLandCost,
+      economicIncome: state.economicIncome,
     );
   }
   
@@ -143,6 +153,8 @@ class EvaluationNotifier extends _$EvaluationNotifier {
       sitePlans: state.sitePlans,
       propertyImages: state.propertyImages,
       additionalData: state.additionalData,
+      buildingLandCost: state.buildingLandCost,
+      economicIncome: state.economicIncome,
     );
   }
   
@@ -163,6 +175,8 @@ class EvaluationNotifier extends _$EvaluationNotifier {
       sitePlans: state.sitePlans,
       propertyImages: state.propertyImages,
       additionalData: state.additionalData,
+      buildingLandCost: state.buildingLandCost,
+      economicIncome: state.economicIncome,
     );
   }
   
@@ -183,6 +197,8 @@ class EvaluationNotifier extends _$EvaluationNotifier {
       sitePlans: sitePlans,
       propertyImages: state.propertyImages,
       additionalData: state.additionalData,
+      buildingLandCost: state.buildingLandCost,
+      economicIncome: state.economicIncome,
     );
   }
   
@@ -203,6 +219,8 @@ class EvaluationNotifier extends _$EvaluationNotifier {
       sitePlans: state.sitePlans,
       propertyImages: images,
       additionalData: state.additionalData,
+      buildingLandCost: state.buildingLandCost,
+      economicIncome: state.economicIncome,
     );
   }
   
@@ -223,6 +241,52 @@ class EvaluationNotifier extends _$EvaluationNotifier {
       sitePlans: state.sitePlans,
       propertyImages: state.propertyImages,
       additionalData: additionalData,
+      buildingLandCost: state.buildingLandCost,
+      economicIncome: state.economicIncome,
+    );
+  }
+  
+  // Update building and land cost (Step 10)
+  void updateBuildingLandCost(BuildingLandCostModel buildingLandCost) {
+    state = EvaluationModel(
+      evaluationId: state.evaluationId,
+      status: state.status,
+      createdAt: state.createdAt,
+      updatedAt: DateTime.now(),
+      generalInfo: state.generalInfo,
+      generalPropertyInfo: state.generalPropertyInfo,
+      propertyDescription: state.propertyDescription,
+      floorsCount: state.floorsCount,
+      floors: state.floors,
+      areaDetails: state.areaDetails,
+      incomeNotes: state.incomeNotes,
+      sitePlans: state.sitePlans,
+      propertyImages: state.propertyImages,
+      additionalData: state.additionalData,
+      buildingLandCost: buildingLandCost,
+      economicIncome: state.economicIncome,
+    );
+  }
+  
+  // Update economic income (Step 11)
+  void updateEconomicIncome(EconomicIncomeModel economicIncome) {
+    state = EvaluationModel(
+      evaluationId: state.evaluationId,
+      status: state.status,
+      createdAt: state.createdAt,
+      updatedAt: DateTime.now(),
+      generalInfo: state.generalInfo,
+      generalPropertyInfo: state.generalPropertyInfo,
+      propertyDescription: state.propertyDescription,
+      floorsCount: state.floorsCount,
+      floors: state.floors,
+      areaDetails: state.areaDetails,
+      incomeNotes: state.incomeNotes,
+      sitePlans: state.sitePlans,
+      propertyImages: state.propertyImages,
+      additionalData: state.additionalData,
+      buildingLandCost: state.buildingLandCost,
+      economicIncome: economicIncome,
     );
   }
   
@@ -247,6 +311,8 @@ class EvaluationNotifier extends _$EvaluationNotifier {
           sitePlans: state.sitePlans,
           propertyImages: state.propertyImages,
           additionalData: state.additionalData,
+          buildingLandCost: state.buildingLandCost,
+          economicIncome: state.economicIncome,
         );
         return id;
       } else {
@@ -257,6 +323,93 @@ class EvaluationNotifier extends _$EvaluationNotifier {
     } catch (e) {
       throw Exception('Failed to save evaluation: $e');
     }
+  }
+  
+  /// Auto-save evaluation as draft
+  /// This is called automatically when navigating between steps or leaving the form
+  /// Returns the evaluation ID (creates new if needed)
+  Future<String?> saveAsDraft() async {
+    try {
+      // Only save if there's actual data to save
+      if (!_hasAnyData()) {
+        return state.evaluationId;
+      }
+      
+      // Don't auto-save deleted forms - they should remain deleted until explicitly restored
+      if (state.status == 'deleted') {
+        return state.evaluationId;
+      }
+      
+      // Ensure status is draft (unless already completed)
+      if (state.status != 'completed') {
+        state = EvaluationModel(
+          evaluationId: state.evaluationId,
+          status: 'draft',
+          previousStatus: state.previousStatus,
+          createdAt: state.createdAt,
+          updatedAt: DateTime.now(),
+          generalInfo: state.generalInfo,
+          generalPropertyInfo: state.generalPropertyInfo,
+          propertyDescription: state.propertyDescription,
+          floorsCount: state.floorsCount,
+          floors: state.floors,
+          areaDetails: state.areaDetails,
+          incomeNotes: state.incomeNotes,
+          sitePlans: state.sitePlans,
+          propertyImages: state.propertyImages,
+          additionalData: state.additionalData,
+          buildingLandCost: state.buildingLandCost,
+          economicIncome: state.economicIncome,
+        );
+      }
+      
+      if (state.evaluationId == null) {
+        // Create new draft evaluation
+        final id = await _evaluationService.createEvaluation(state);
+        state = EvaluationModel(
+          evaluationId: id,
+          status: state.status,
+          createdAt: state.createdAt,
+          updatedAt: DateTime.now(),
+          generalInfo: state.generalInfo,
+          generalPropertyInfo: state.generalPropertyInfo,
+          propertyDescription: state.propertyDescription,
+          floorsCount: state.floorsCount,
+          floors: state.floors,
+          areaDetails: state.areaDetails,
+          incomeNotes: state.incomeNotes,
+          sitePlans: state.sitePlans,
+          propertyImages: state.propertyImages,
+          additionalData: state.additionalData,
+          buildingLandCost: state.buildingLandCost,
+          economicIncome: state.economicIncome,
+        );
+        return id;
+      } else {
+        // Update existing draft
+        await _evaluationService.updateEvaluation(state);
+        return state.evaluationId;
+      }
+    } catch (e) {
+      // Don't throw - auto-save should fail silently
+      // Error logged: Auto-save failed with error: $e
+      return state.evaluationId;
+    }
+  }
+  
+  /// Check if there's any data worth saving
+  bool _hasAnyData() {
+    return state.generalInfo != null ||
+           state.generalPropertyInfo != null ||
+           state.propertyDescription != null ||
+           (state.floors != null && state.floors!.isNotEmpty) ||
+           state.areaDetails != null ||
+           state.incomeNotes != null ||
+           state.sitePlans != null ||
+           state.propertyImages != null ||
+           state.additionalData != null ||
+           state.buildingLandCost != null ||
+           state.economicIncome != null;
   }
   
   // Load evaluation from Firebase
@@ -290,6 +443,8 @@ class EvaluationNotifier extends _$EvaluationNotifier {
       sitePlans: state.sitePlans,
       propertyImages: state.propertyImages,
       additionalData: state.additionalData,
+      buildingLandCost: state.buildingLandCost,
+      economicIncome: state.economicIncome,
     );
   }
   

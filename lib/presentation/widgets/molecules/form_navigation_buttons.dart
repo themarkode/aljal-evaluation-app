@@ -13,6 +13,8 @@ const Map<int, String> stepNames = {
   7: 'المخططات الموقعية',
   8: 'صور العقار',
   9: 'بيانات إضافية',
+  10: 'تكلفة المباني والأرض',
+  11: 'الدخل الاقتصادي',
 };
 
 /// Form navigation buttons with step names (Previous Step Name | Next Step Name)
@@ -36,7 +38,7 @@ class FormNavigationButtons extends StatelessWidget {
 
   String get _nextButtonText {
     if (nextText != null) return nextText!;
-    if (currentStep >= 9) return 'حفظ النموذج';
+    if (currentStep >= 11) return 'حفظ النموذج';
     return stepNames[currentStep + 1] ?? 'التالي';
   }
 
@@ -93,7 +95,7 @@ class FormNavigationButtons extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+      children: [
               // Arrow icon FIRST (on RIGHT in RTL visual)
               if (!isLoading)
                 const Icon(
@@ -119,7 +121,7 @@ class FormNavigationButtons extends StatelessWidget {
                     style: AppTypography.labelMedium.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
-                    ),
+          ),
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                   ),
@@ -149,7 +151,7 @@ class FormNavigationButtons extends StatelessWidget {
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+      children: [
               // Text FIRST (on RIGHT in RTL visual)
               Flexible(
                 child: Text(
@@ -169,8 +171,8 @@ class FormNavigationButtons extends StatelessWidget {
                 color: _isFirstStep ? AppColors.textSecondary : AppColors.primary,
                 size: 20,
               ),
-            ],
-          ),
+          ],
+        ),
         ),
       ),
     );
