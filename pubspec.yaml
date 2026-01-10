@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   
   # Core UI
   cupertino_icons: ^1.0.8
@@ -23,6 +25,9 @@ dependencies:
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.3.5  
   
+  # Local Storage
+  shared_preferences: ^2.2.3
+  
   # Image Handling
   image_picker: ^1.1.2
   image: ^4.0.17
@@ -30,16 +35,16 @@ dependencies:
   # Document Generation (NEW APPROACH - XML based)
   archive: ^3.6.1          # For ZIP/DOCX handling
   xml: ^6.3.0              # For XML parsing and manipulation
-  http: ^1.1.0             # For HTTP requests
+  http: ^1.1.0             # For HTTP requests (also used for DOCX to PDF conversion)
 
   # Utilities
   intl: ^0.20.2            # Date formatting
+  crypto: ^3.0.3           # Password hashing (SHA-256)
   path_provider: ^2.1.4    # File system access
   permission_handler: ^11.3.1  # File permissions
   open_file: ^3.5.6        # Open generated documents
+  share_plus: ^10.1.4      # Share files to other apps
   
-  # UI Enhancement
-  flutter_svg: ^2.2.0
   
 
 dev_dependencies:
@@ -48,13 +53,24 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   riverpod_generator: ^2.4.3
   build_runner: ^2.5.4
+  flutter_launcher_icons: ^0.14.3
+  msix: ^3.16.0  # Windows MSIX installer
+
+# App Icon Configuration
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/only_logo_with_background.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/only_logo_with_background.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true
   
   assets:
     - assets/images/
-    - assets/icons/
     - assets/fonts/
     - assets/word_template/template.docx
   
@@ -64,9 +80,14 @@ flutter:
         - asset: assets/fonts/Inter-VariableFont_opsz,wght.ttf
         - asset: assets/fonts/Inter-Italic-VariableFont_opsz,wght.ttf
           style: italic
-    # Arabic font support - commented out until you add the files
-    # - family: NotoSansArabic
-    #   fonts:
-    #     - asset: assets/fonts/NotoSansArabic-Regular.ttf
-    #     - asset: assets/fonts/NotoSansArabic-Bold.ttf
-    #       weight: 700
+
+# Windows MSIX Installer Configuration
+msix_config:
+  display_name: Al Jal Evaluation
+  publisher_display_name: AL-JAL REAL ESTATE SERVICES CO
+  identity_name: com.aljal.aljalevaluation
+  msix_version: 1.0.0.0
+  logo_path: assets/images/Al_Jal_Logo.png
+  capabilities: internetClient, internetClientServer
+  languages: ar, en
+  file_extension: .aljal

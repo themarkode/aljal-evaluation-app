@@ -1,109 +1,171 @@
 import 'package:flutter/material.dart';
 
-/// App color palette based on Figma design system
-///
-/// This class defines all colors used throughout the app.
-/// Colors are organized into categories for better maintainability.
-/// All colors are defined as static constants for compile-time optimization.
+/// Modern, Elegant Color Palette for Al-Jal Evaluation App
+/// 
+/// Designed for a professional real estate evaluation application
+/// with Arabic UI support and beautiful gradients.
 class AppColors {
-  // Prevent instantiation
   AppColors._();
 
   // ============================================================
-  // PRIMARY COLORS - Main brand colors
+  // PRIMARY BRAND COLORS - Deep Navy & Gold Theme
   // ============================================================
 
-  /// Primary blue used for main actions and primary buttons
-  /// Hex: #007AD3
-  static const Color lightBlue = Color(0xFF007AD3);
-
-  /// Primary green used for success states and confirmation actions
-  /// Hex: #129E44
-  static const Color green = Color(0xFF129E44);
-
-  /// Light green used for success indicators and validation dots
-  /// Hex: #1FDB81
-  static const Color lightGreen = Color(0xFF1FDB81);
-
-  // ============================================================
-  // SEMANTIC COLORS - Status and feedback colors
-  // ============================================================
-
-  /// Error color for warnings, errors, and destructive actions
-  /// Hex: #DD1D1D
-  static const Color lightRed = Color(0xFFDD1D1D);
+  /// Deep navy blue - main brand color
+  static const Color navy = Color(0xFF1A237E);
+  
+  /// Rich navy for headers
+  static const Color navyDark = Color(0xFF0D1B3E);
+  
+  /// Lighter navy for accents
+  static const Color navyLight = Color(0xFF3949AB);
+  
+  /// Gold accent - premium feel
+  static const Color gold = Color(0xFFD4AF37);
+  
+  /// Light gold for highlights
+  static const Color goldLight = Color(0xFFF5E6B3);
 
   // ============================================================
-  // NEUTRAL COLORS - Grays and text colors
+  // SEMANTIC COLORS - Status colors
   // ============================================================
 
-  /// Pure black for primary text and icons
-  /// Hex: #03111B
-  static const Color black = Color(0xFF03111B);
+  /// Success green - modern teal-green
+  static const Color success = Color(0xFF00897B);
+  static const Color successLight = Color(0xFFE0F2F1);
+  
+  /// Error red - soft but noticeable
+  static const Color error = Color(0xFFE53935);
+  static const Color errorLight = Color(0xFFFFEBEE);
+  
+  /// Warning amber
+  static const Color warning = Color(0xFFFFA726);
+  static const Color warningLight = Color(0xFFFFF8E1);
+  
+  /// Info blue
+  static const Color info = Color(0xFF29B6F6);
+  static const Color infoLight = Color(0xFFE1F5FE);
 
-  /// Mid-tone black with 70% opacity for secondary text
-  /// Hex: #03111B with opacity 0.7
-  static const Color midBlack = Color(0xB303111B); // Note: B3 = 70% in hex
+  // ============================================================
+  // NEUTRAL COLORS - Modern grays
+  // ============================================================
 
-  /// Mid gray for borders and dividers
-  /// Hex: #D1D1D1
-  static const Color midGray = Color(0xFFD1D1D1);
-
-  /// Light gray for backgrounds and disabled states
-  /// Hex: #E0E0E0
-  static const Color lightGray = Color(0xFFE0E0E0);
-
-  /// Pure white for backgrounds and contrast
-  /// Hex: #FFFFFF
+  /// Pure black for text
+  static const Color black = Color(0xFF1A1A2E);
+  
+  /// Dark gray for secondary text
+  static const Color darkGray = Color(0xFF4A4A5C);
+  
+  /// Medium gray for borders
+  static const Color mediumGray = Color(0xFFBDBDC7);
+  
+  /// Light gray for backgrounds
+  static const Color lightGray = Color(0xFFF5F5F7);
+  
+  /// Off-white for surfaces
+  static const Color offWhite = Color(0xFFFAFAFC);
+  
+  /// Pure white
   static const Color white = Color(0xFFFFFFFF);
 
   // ============================================================
-  // SEMANTIC ALIASES - For better code readability
+  // GRADIENT DEFINITIONS
   // ============================================================
 
-  /// Primary color - used for main actions (buttons, links)
-  static const Color primary = lightBlue;
+  /// Primary gradient - for headers and buttons
+  static const LinearGradient primaryGradient = LinearGradient(
+    colors: [navyDark, navy, navyLight],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  /// Gold gradient - for accents and highlights
+  static const LinearGradient goldGradient = LinearGradient(
+    colors: [Color(0xFFD4AF37), Color(0xFFF5E6B3), Color(0xFFD4AF37)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  /// Success gradient
+  static const LinearGradient successGradient = LinearGradient(
+    colors: [Color(0xFF00897B), Color(0xFF26A69A)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 
-  /// Success color - used for completed actions and validation
-  static const Color success = green;
+  /// Subtle background gradient
+  static const LinearGradient backgroundGradient = LinearGradient(
+    colors: [offWhite, lightGray],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
 
-  /// Success indicator - used for validation dots and checkmarks
-  static const Color successIndicator = lightGreen;
+  // ============================================================
+  // SEMANTIC ALIASES
+  // ============================================================
 
-  /// Error color - used for errors and destructive actions
-  static const Color error = lightRed;
-
-  /// Background color - main app background
+  /// Primary color
+  static const Color primary = navy;
+  
+  /// Primary variant
+  static const Color primaryDark = navyDark;
+  static const Color primaryLight = navyLight;
+  
+  /// Accent color
+  static const Color accent = gold;
+  
+  /// Background color
   static const Color background = lightGray;
-
-  /// Surface color - card and container backgrounds
+  
+  /// Surface color (cards, dialogs)
   static const Color surface = white;
-
-  /// Text primary - main text color
+  
+  /// Elevated surface (floating elements)
+  static const Color surfaceElevated = offWhite;
+  
+  /// Text colors
   static const Color textPrimary = black;
-
-  /// Text secondary - subtle text and labels
-  static const Color textSecondary = midBlack;
-
-  /// Border color - dividers and field borders
-  static const Color border = midGray;
+  static const Color textSecondary = darkGray;
+  static const Color textHint = mediumGray;
+  
+  /// Border color
+  static const Color border = mediumGray;
+  static const Color borderLight = Color(0xFFE8E8EC);
 
   // ============================================================
-  // SPECIFIC USE CASES - Component-specific colors
+  // COMPONENT-SPECIFIC COLORS
   // ============================================================
 
-  /// Section header background (collapsible blue headers)
-  static const Color sectionHeader = lightBlue;
-
-  /// Validation dot color (green dots next to required fields)
-  static const Color validationDot = lightGreen;
-
-  /// Delete button color
-  static const Color deleteButton = lightRed;
-
+  /// Section header (collapsible)
+  static const Color sectionHeader = navy;
+  
+  /// Validation dot
+  static const Color validationDot = success;
+  
+  /// Delete button
+  static const Color deleteButton = error;
+  
   /// Primary action button
-  static const Color primaryButton = lightBlue;
+  static const Color primaryButton = navy;
+  
+  /// Success button
+  static const Color successButton = success;
+  
+  /// Card shadow color
+  static Color cardShadow = black.withOpacity(0.08);
+  
+  /// Overlay color
+  static Color overlay = black.withOpacity(0.5);
 
-  /// Success button (like "Save" or "Complete")
-  static const Color successButton = green;
+  // ============================================================
+  // LEGACY ALIASES (for compatibility)
+  // ============================================================
+  
+  static const Color lightBlue = navy;
+  static const Color green = success;
+  static const Color lightGreen = Color(0xFF4DB6AC);
+  static const Color lightRed = error;
+  static const Color midBlack = darkGray;
+  static const Color midGray = mediumGray;
+  static const Color successIndicator = lightGreen;
 }

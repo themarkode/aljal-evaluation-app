@@ -1,7 +1,5 @@
 // Page name in Figma: 1.4 New Form
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class AreaDetailsModel {
   // ✅ Word fields (green dots - will be mapped to Word document)
 

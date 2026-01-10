@@ -1,7 +1,5 @@
 // Page name in Figma: 1.7 New Form
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class ImageModel {
   // ✅ Word fields (green dots - will be mapped to Word document)
 

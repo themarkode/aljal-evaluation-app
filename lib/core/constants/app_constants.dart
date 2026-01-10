@@ -99,6 +99,32 @@ class AppConstants {
   static const double minButtonWidth = 120.0;
 
   // ============================================================
+  // UI DIMENSIONS (Centralized for consistency)
+  // ============================================================
+
+  /// Logo sizes
+  static const double logoSizeSmall = 36.0;
+  static const double logoSizeMedium = 50.0;
+  static const double logoSizeLarge = 60.0;
+  static const double logoFallbackIconSmall = 22.0;
+  static const double logoFallbackIconMedium = 28.0;
+  static const double logoFallbackIconLarge = 32.0;
+
+  /// AppBar dimensions
+  static const double appBarToolbarHeight = 70.0;
+  static const double appBarLeadingWidth = 52.0;
+  static const double appBarLogoPaddingRight = 16.0;
+  static const double appBarMenuPaddingLeft = 16.0;
+
+  /// Menu button dimensions
+  static const double menuButtonSize = 44.0;
+  static const double menuButtonIconSize = 26.0;
+  static const double menuButtonBorderRadius = 12.0;
+
+  /// Validation dot
+  static const double validationDotPadding = 22.5;
+
+  // ============================================================
   // PHONE NUMBER
   // ============================================================
 

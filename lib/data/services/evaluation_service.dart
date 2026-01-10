@@ -1,8 +1,24 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/evaluation_model.dart';
 
+/// Pagination result containing evaluations and the last document for cursor-based pagination
+class PaginatedEvaluations {
+  final List<EvaluationModel> evaluations;
+  final DocumentSnapshot? lastDocument;
+  final bool hasMore;
+
+  PaginatedEvaluations({
+    required this.evaluations,
+    this.lastDocument,
+    required this.hasMore,
+  });
+}
+
 class EvaluationService {
   final _collection = FirebaseFirestore.instance.collection('evaluations');
+  
+  /// Default pagination limit
+  static const int defaultLimit = 25;
 
   // Create new evaluation
   Future<String> createEvaluation(EvaluationModel evaluation) async {
@@ -73,17 +89,23 @@ class EvaluationService {
     try {
       DocumentSnapshot doc = await _collection.doc(evaluationId).get();
 
-      if (!doc.exists) return null;
+      if (!doc.exists) {
+        return null;
+      }
 
-      return EvaluationModel.fromJson(doc.data() as Map<String, dynamic>);
+      final data = doc.data() as Map<String, dynamic>;
+      // Ensure evaluationId is set from document ID
+      data['evaluationId'] = doc.id;
+
+      return EvaluationModel.fromJson(data);
     } catch (e) {
       throw Exception('Failed to get evaluation: $e');
     }
   }
 
   // Get all evaluations with pagination
-  Future<List<EvaluationModel>> getAllEvaluations({
-    int limit = 10,
+  Future<PaginatedEvaluations> getAllEvaluations({
+    int limit = defaultLimit,
     DocumentSnapshot? startAfter,
   }) async {
     try {
@@ -96,10 +118,18 @@ class EvaluationService {
 
       QuerySnapshot querySnapshot = await query.get();
 
-      return querySnapshot.docs
-          .map((doc) =>
-              EvaluationModel.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      final evaluations = querySnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        // Ensure evaluationId is set from document ID
+        data['evaluationId'] = doc.id;
+        return EvaluationModel.fromJson(data);
+      }).toList();
+
+      return PaginatedEvaluations(
+        evaluations: evaluations,
+        lastDocument: querySnapshot.docs.isNotEmpty ? querySnapshot.docs.last : null,
+        hasMore: evaluations.length >= limit,
+      );
     } catch (e) {
       throw Exception('Failed to get evaluations: $e');
     }
@@ -120,21 +150,61 @@ class EvaluationService {
           .limit(limit)
           .get();
 
-      return querySnapshot.docs
-          .map((doc) =>
-              EvaluationModel.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        // Ensure evaluationId is set from document ID
+        data['evaluationId'] = doc.id;
+        return EvaluationModel.fromJson(data);
+      }).toList();
     } catch (e) {
       throw Exception('Failed to search evaluations: $e');
     }
   }
 
-  // Delete evaluation
-  Future<void> deleteEvaluation(String evaluationId) async {
+  /// Soft delete - marks evaluation as 'deleted' status
+  /// The evaluation can be recovered or permanently deleted later
+  /// Saves the previous status so it can be restored later
+  Future<void> softDeleteEvaluation(String evaluationId) async {
+    try {
+      // First get the current status to save as previousStatus
+      final doc = await _collection.doc(evaluationId).get();
+      final currentStatus = doc.data()?['status'] ?? 'draft';
+      
+      await _collection.doc(evaluationId).update({
+        'previousStatus': currentStatus,
+        'status': 'deleted',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to soft delete evaluation: $e');
+    }
+  }
+  
+  /// Permanent delete - completely removes the evaluation from Firebase
+  /// This should only be used for evaluations already in 'deleted' status
+  Future<void> permanentlyDeleteEvaluation(String evaluationId) async {
     try {
       await _collection.doc(evaluationId).delete();
     } catch (e) {
-      throw Exception('Failed to delete evaluation: $e');
+      throw Exception('Failed to permanently delete evaluation: $e');
+    }
+  }
+  
+  /// Restore a soft-deleted evaluation back to its previous status
+  /// If no previous status is stored, defaults to 'draft'
+  Future<void> restoreEvaluation(String evaluationId) async {
+    try {
+      // Get the previous status to restore to
+      final doc = await _collection.doc(evaluationId).get();
+      final previousStatus = doc.data()?['previousStatus'] ?? 'draft';
+      
+      await _collection.doc(evaluationId).update({
+        'status': previousStatus,
+        'previousStatus': null, // Clear the previousStatus field
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to restore evaluation: $e');
     }
   }
 
@@ -148,34 +218,95 @@ class EvaluationService {
     }
   }
 
-  // Add these methods to your existing EvaluationService class:
-
-// Search evaluations by client name
-  Future<List<EvaluationModel>> searchByClientName(String clientName) async {
+/// Search evaluations across multiple fields:
+  /// اسم العميل، المنطقة، القطعة، القسيمة، الرقم الآلي، التاريخ، رقم هاتف العميل، نوع العقار، رقم الوثيقة، رقم المخطط
+  Future<List<EvaluationModel>> searchEvaluations(String query) async {
     try {
-      // For partial search, we need to use >= and < with the next character
-      String searchEnd = '$clientName\uf8ff';
-
+      if (query.isEmpty) {
+        return [];
+      }
+      
+      final queryLower = query.toLowerCase().trim();
+      
+      // Fetch all evaluations (limited for performance)
       QuerySnapshot querySnapshot = await _collection
-          .where('generalInfo.clientName', isGreaterThanOrEqualTo: clientName)
-          .where('generalInfo.clientName', isLessThan: searchEnd)
-          .orderBy('generalInfo.clientName')
-          .limit(20)
+          .orderBy('updatedAt', descending: true)
+          .limit(200) // Fetch a reasonable number for client-side filtering
           .get();
 
-      return querySnapshot.docs
-          .map((doc) =>
-              EvaluationModel.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      final evaluations = querySnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        data['evaluationId'] = doc.id;
+        return EvaluationModel.fromJson(data);
+      }).toList();
+
+      // Filter client-side across all specified fields
+      return evaluations.where((eval) {
+        // اسم العميل - Client Name
+        final clientName = eval.generalInfo?.clientName?.toLowerCase() ?? '';
+        if (clientName.contains(queryLower)) return true;
+        
+        // المنطقة - Area
+        final area = eval.generalPropertyInfo?.area?.toLowerCase() ?? '';
+        if (area.contains(queryLower)) return true;
+        
+        // القطعة - Plot Number
+        final plotNumber = eval.generalPropertyInfo?.plotNumber?.toLowerCase() ?? '';
+        if (plotNumber.contains(queryLower)) return true;
+        
+        // القسيمة - Parcel Number
+        final parcelNumber = eval.generalPropertyInfo?.parcelNumber?.toLowerCase() ?? '';
+        if (parcelNumber.contains(queryLower)) return true;
+        
+        // الرقم الآلي - Auto Number
+        final autoNumber = eval.generalPropertyInfo?.autoNumber?.toLowerCase() ?? '';
+        if (autoNumber.contains(queryLower)) return true;
+        
+        // رقم هاتف العميل - Client Phone
+        final clientPhone = eval.generalInfo?.clientPhone?.toLowerCase() ?? '';
+        if (clientPhone.contains(queryLower)) return true;
+        
+        // نوع العقار - Property Type
+        final propertyType = eval.generalPropertyInfo?.propertyType?.toLowerCase() ?? '';
+        if (propertyType.contains(queryLower)) return true;
+        
+        // رقم الوثيقة - Document Number
+        final documentNumber = eval.generalPropertyInfo?.documentNumber?.toLowerCase() ?? '';
+        if (documentNumber.contains(queryLower)) return true;
+        
+        // رقم المخطط - Plan Number
+        final planNumber = eval.generalPropertyInfo?.planNumber?.toLowerCase() ?? '';
+        if (planNumber.contains(queryLower)) return true;
+        
+        // التاريخ - Date (search by formatted date string)
+        final requestDate = eval.generalInfo?.requestDate;
+        if (requestDate != null) {
+          final dateStr = '${requestDate.day}/${requestDate.month}/${requestDate.year}';
+          if (dateStr.contains(queryLower)) return true;
+        }
+        
+        final createdAt = eval.createdAt;
+        if (createdAt != null) {
+          final dateStr = '${createdAt.day}/${createdAt.month}/${createdAt.year}';
+          if (dateStr.contains(queryLower)) return true;
+        }
+        
+        return false;
+      }).toList();
     } catch (e) {
-      throw Exception('Failed to search by client name: $e');
+      throw Exception('Failed to search evaluations: $e');
     }
+  }
+  
+  /// Legacy method - kept for backward compatibility
+  Future<List<EvaluationModel>> searchByClientName(String clientName) async {
+    return searchEvaluations(clientName);
   }
 
 // Get evaluations by status (draft, completed, etc.)
-  Future<List<EvaluationModel>> getEvaluationsByStatus({
+  Future<PaginatedEvaluations> getEvaluationsByStatus({
     required String status,
-    int limit = 10,
+    int limit = defaultLimit,
     DocumentSnapshot? startAfter,
   }) async {
     try {
@@ -190,10 +321,18 @@ class EvaluationService {
 
       QuerySnapshot querySnapshot = await query.get();
 
-      return querySnapshot.docs
-          .map((doc) =>
-              EvaluationModel.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      final evaluations = querySnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        // Ensure evaluationId is set from document ID
+        data['evaluationId'] = doc.id;
+        return EvaluationModel.fromJson(data);
+      }).toList();
+
+      return PaginatedEvaluations(
+        evaluations: evaluations,
+        lastDocument: querySnapshot.docs.isNotEmpty ? querySnapshot.docs.last : null,
+        hasMore: evaluations.length >= limit,
+      );
     } catch (e) {
       throw Exception('Failed to get evaluations by status: $e');
     }
@@ -212,5 +351,50 @@ class EvaluationService {
     } catch (e) {
       throw Exception('Failed to delete multiple evaluations: $e');
     }
+  }
+
+  /// Real-time stream of all evaluations
+  /// This enables automatic sync across devices
+  Stream<List<EvaluationModel>> watchEvaluations({int limit = defaultLimit}) {
+    return _collection
+        .orderBy('updatedAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['evaluationId'] = doc.id;
+        return EvaluationModel.fromJson(data);
+      }).toList();
+    });
+  }
+
+  /// Real-time stream of evaluations filtered by status
+  Stream<List<EvaluationModel>> watchEvaluationsByStatus({
+    required String status,
+    int limit = defaultLimit,
+  }) {
+    return _collection
+        .where('status', isEqualTo: status)
+        .orderBy('updatedAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['evaluationId'] = doc.id;
+        return EvaluationModel.fromJson(data);
+      }).toList();
+    });
+  }
+
+  /// Real-time stream for a single evaluation
+  Stream<EvaluationModel?> watchEvaluation(String evaluationId) {
+    return _collection.doc(evaluationId).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      final data = doc.data()!;
+      data['evaluationId'] = doc.id;
+      return EvaluationModel.fromJson(data);
+    });
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:aljal_evaluation/data/models/pages_models/floor_model.dart';
 import 'package:archive/archive.dart';
@@ -8,8 +9,22 @@ import 'package:http/http.dart' as http;
 import '../models/evaluation_model.dart';
 
 class WordGenerationService {
+  // Store downloaded images to add to archive
+  final Map<String, List<int>> _downloadedImages = {};
+  // Store image relationship IDs for later use
+  final Map<String, String> _imageRelationshipIds = {};
+  // Map content control tags to new image filenames
+  final Map<String, String> _tagToImageMap = {};
+  // Store modified header/footer XML content
+  final Map<String, String> _modifiedHeadersFooters = {};
+
   Future<File> generateWordDocument(EvaluationModel evaluation) async {
     try {
+      _downloadedImages.clear();
+      _imageRelationshipIds.clear();
+      _tagToImageMap.clear();
+      _modifiedHeadersFooters.clear();
+
       // Load template from assets
       ByteData templateData =
           await rootBundle.load('assets/word_template/template.docx');
@@ -24,32 +39,186 @@ class WordGenerationService {
         throw Exception('Could not find document.xml in template');
       }
 
-      // Parse XML
-      String xmlContent = String.fromCharCodes(documentXml.content);
+      // Parse XML - MUST decode as UTF-8 for Arabic text!
+      String xmlContent = utf8.decode(documentXml.content);
       XmlDocument xmlDoc = XmlDocument.parse(xmlContent);
 
-      // Replace all content types
+      // Download images first
+      await _downloadAndPrepareImages(evaluation, archive);
+
+      // Generate relationship IDs for new images BEFORE modifying XML
+      ArchiveFile? relsFile =
+          _findFile(archive, 'word/_rels/document.xml.rels');
+      if (relsFile != null && _downloadedImages.isNotEmpty) {
+        String relsContent = utf8.decode(relsFile.content);
+        _generateImageRelationshipIds(relsContent);
+      }
+
+      // Replace all content types in document.xml
       _replaceTextFields(xmlDoc, evaluation);
       _replaceRepeatingSection(xmlDoc, evaluation);
-      await _replaceImages(xmlDoc, evaluation, archive);
-      _replaceHyperlinks(xmlDoc, evaluation);
+
+      // Update image references in document XML using new relationship IDs
+      _updateImageReferences(xmlDoc);
+      _replaceHyperlinks(xmlDoc, evaluation, archive);
 
       // Convert back to string
       String modifiedXml = xmlDoc.toXmlString(pretty: false);
 
-      // Create new archive with images
-      Archive newArchive = await _createModifiedArchive(archive, modifiedXml);
+      // Replace location placeholder URL in the document XML (Word stores it inline)
+      String? locationUrl = evaluation.propertyImages?.locationAddressLink;
+      if (locationUrl != null && locationUrl.isNotEmpty) {
+        // Replace ALL case variations of the placeholder
+        modifiedXml = modifiedXml
+            .replaceAll('https://LOCATION_PLACEHOLDER/', locationUrl)
+            .replaceAll('https://LOCATION_PLACEHOLDER', locationUrl)
+            .replaceAll('http://LOCATION_PLACEHOLDER/', locationUrl)
+            .replaceAll('http://LOCATION_PLACEHOLDER', locationUrl)
+            .replaceAll('LOCATION_PLACEHOLDER/', locationUrl)
+            .replaceAll('LOCATION_PLACEHOLDER', locationUrl)
+            .replaceAll('https://location_placeholder/', locationUrl)
+            .replaceAll('https://location_placeholder', locationUrl)
+            .replaceAll('http://location_placeholder/', locationUrl)
+            .replaceAll('http://location_placeholder', locationUrl)
+            .replaceAll('location_placeholder/', locationUrl)
+            .replaceAll('location_placeholder', locationUrl);
+      }
+
+      // Process header and footer files (header1.xml, footer1.xml, etc.)
+      _processHeadersAndFooters(archive, evaluation);
+
+      // Create new archive with images and modified footers
+      Archive newArchive =
+          await _createModifiedArchive(archive, modifiedXml, evaluation);
 
       // Save file
-      List<int> newDocxBytes = ZipEncoder().encode(newArchive)!;
-      Directory appDir = await getApplicationDocumentsDirectory();
+      List<int>? newDocxBytes = ZipEncoder().encode(newArchive);
+      if (newDocxBytes == null) {
+        throw Exception('Failed to encode ZIP archive');
+      }
+
+      // Try external storage first, fall back to app documents
+      Directory? outputDir;
+      try {
+        outputDir = await getExternalStorageDirectory();
+      } catch (e) {
+        // External storage not available
+      }
+
+      outputDir ??= await getApplicationDocumentsDirectory();
+
       String fileName = _generateFileName(evaluation);
-      File outputFile = File('${appDir.path}/$fileName');
+      String filePath = '${outputDir.path}/$fileName';
+
+      File outputFile = File(filePath);
       await outputFile.writeAsBytes(newDocxBytes);
+
+      // Verify file exists
+      bool exists = await outputFile.exists();
+      int fileSize = exists ? await outputFile.length() : 0;
+
+      if (!exists || fileSize == 0) {
+        throw Exception('File was not saved properly');
+      }
 
       return outputFile;
     } catch (e) {
       throw Exception('Failed to generate Word document: $e');
+    }
+  }
+
+  // Download images and create new image files for each placeholder
+  Future<void> _downloadAndPrepareImages(
+      EvaluationModel evaluation, Archive archive) async {
+    if (evaluation.propertyImages == null) {
+      return;
+    }
+
+    // Map: content control tag -> (new image filename, URL)
+    // Each content control tag gets its own unique image file
+    // Include multiple variations of tag names to handle different template formats
+    Map<String, MapEntry<String, String?>> tagToImageUrl = {
+      // Location map image - different possible tag names
+      'صور_لموقع_العقار_حسب_المخطط_العام_لبلدية_الكويت': MapEntry(
+          'new_image_1.jpg',
+          evaluation.propertyImages!.propertyLocationMapImageUrl),
+      'صور_لموقع_العقار': MapEntry('new_image_1.jpg',
+          evaluation.propertyImages!.propertyLocationMapImageUrl),
+
+      // Property image
+      'صورة_للعقار': MapEntry(
+          'new_image_2.jpg', evaluation.propertyImages!.propertyImageUrl),
+      'صوره_للعقار': MapEntry(
+          'new_image_2.jpg', evaluation.propertyImages!.propertyImageUrl),
+
+      // Various property images 1 - multiple possible tag formats
+      '1_صور_مختلفة_للعقار': MapEntry('new_image_3.jpg',
+          evaluation.propertyImages!.propertyVariousImages1Url),
+      'صور_مختلفة_للعقار_1': MapEntry('new_image_3.jpg',
+          evaluation.propertyImages!.propertyVariousImages1Url),
+      'صور_مختلفة_للعقار1': MapEntry('new_image_3.jpg',
+          evaluation.propertyImages!.propertyVariousImages1Url),
+      'صور_مختلفه_للعقار_1': MapEntry('new_image_3.jpg',
+          evaluation.propertyImages!.propertyVariousImages1Url),
+      'صور_مختلفه_للعقار1': MapEntry('new_image_3.jpg',
+          evaluation.propertyImages!.propertyVariousImages1Url),
+
+      // Various property images 2 - multiple possible tag formats
+      '2_صور_مختلفة_للعقار': MapEntry('new_image_4.jpg',
+          evaluation.propertyImages!.propertyVariousImages2Url),
+      'صور_مختلفة_للعقار_2': MapEntry('new_image_4.jpg',
+          evaluation.propertyImages!.propertyVariousImages2Url),
+      'صور_مختلفة_للعقار2': MapEntry('new_image_4.jpg',
+          evaluation.propertyImages!.propertyVariousImages2Url),
+      'صور_مختلفه_للعقار_2': MapEntry('new_image_4.jpg',
+          evaluation.propertyImages!.propertyVariousImages2Url),
+      'صور_مختلفه_للعقار2': MapEntry('new_image_4.jpg',
+          evaluation.propertyImages!.propertyVariousImages2Url),
+
+      // Satellite image
+      'صورة_لموقع_العقار_من_القمر_الصناعي': MapEntry('new_image_5.jpg',
+          evaluation.propertyImages!.satelliteLocationImageUrl),
+      'صوره_لموقع_العقار_من_القمر_الصناعي': MapEntry('new_image_5.jpg',
+          evaluation.propertyImages!.satelliteLocationImageUrl),
+
+      // Civil plot map
+      'صور_لموقع_القطعة_المدنية_حسب_المخطط_العام_لبلدية_الكويت': MapEntry(
+          'new_image_6.jpg', evaluation.propertyImages!.civilPlotMapImageUrl),
+      'صور_لموقع_القطعه_المدنيه': MapEntry(
+          'new_image_6.jpg', evaluation.propertyImages!.civilPlotMapImageUrl),
+    };
+
+    // Download all images in PARALLEL for better performance
+    // This significantly reduces wait time when multiple images need downloading
+    final downloadFutures = <Future<void>>[];
+
+    for (var entry in tagToImageUrl.entries) {
+      String tag = entry.key;
+      String newImageName = entry.value.key;
+      String? imageUrl = entry.value.value;
+
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        // Add each download to the list of futures
+        downloadFutures.add(_downloadSingleImage(tag, newImageName, imageUrl));
+      }
+    }
+
+    // Wait for ALL downloads to complete simultaneously
+    await Future.wait(downloadFutures);
+  }
+
+  /// Downloads a single image and stores it for later use
+  Future<void> _downloadSingleImage(
+      String tag, String newImageName, String imageUrl) async {
+    try {
+      http.Response response = await http.get(Uri.parse(imageUrl));
+
+      if (response.statusCode == 200) {
+        _downloadedImages['word/media/$newImageName'] = response.bodyBytes;
+        _tagToImageMap[tag] = newImageName;
+      }
+    } catch (e) {
+      // Skip this image if download fails - document will still generate
     }
   }
 
@@ -102,31 +271,17 @@ class WordGenerationService {
 
     XmlElement templateRow = rows.first;
 
-    // Find the parent table by looking for w:tbl element
-    XmlElement? parentTable;
+    // Find the parent of the repeating section to insert rows in the correct place
+    XmlElement? parent = repeatingSection.parent as XmlElement?;
+    if (parent == null) return;
 
-    // Fix: Change XmlElement to XmlNode and add type check
-    for (XmlNode ancestor in repeatingSection.ancestors) {
-      if (ancestor is XmlElement && ancestor.name.local == 'tbl') {
-        parentTable = ancestor;
-        break;
-      }
-    }
+    // Find the index of the repeating section in the parent
+    int insertIndex = parent.children.indexOf(repeatingSection);
+    if (insertIndex == -1) return;
 
-    if (parentTable == null) {
-      // If no table found in ancestors, look for it as a child
-      final tables = repeatingSection.findAllElements('w:tbl').toList();
-      if (tables.isNotEmpty) {
-        parentTable = tables.first;
-      }
-    }
-
-    if (parentTable == null) return;
-
-    // Remove the template row
-    templateRow.remove();
-
-    // Create new rows for each floor
+    // Create new rows for each floor and insert them BEFORE the repeating section
+    // We insert in reverse order so they end up in correct order
+    List<XmlElement> newRows = [];
     for (FloorModel floor in floors) {
       XmlElement newRow = templateRow.copy();
 
@@ -147,94 +302,78 @@ class WordGenerationService {
         }
       }
 
-      parentTable.children.add(newRow);
+      newRows.add(newRow);
     }
+
+    // Insert all new rows at the position of the repeating section
+    for (int i = 0; i < newRows.length; i++) {
+      parent.children.insert(insertIndex + i, newRows[i]);
+    }
+
+    // Remove the original repeating section (which contains the template)
+    repeatingSection.remove();
   }
 
-  // Replace images with actual image data
-  Future<void> _replaceImages(
-      XmlDocument xmlDoc, EvaluationModel evaluation, Archive archive) async {
-    if (evaluation.propertyImages == null) return;
+  // Replace location hyperlink - update both text and URL
+  void _replaceHyperlinks(
+      XmlDocument xmlDoc, EvaluationModel evaluation, Archive archive) {
+    String? addressText = evaluation.propertyImages?.locationAddressText;
 
-    Map<String, String?> imageMapping = {
-      'صور_لموقع_العقار_حسب_المخطط_العام_لبلدية_الكويت':
-          evaluation.propertyImages!.propertyLocationMapImageUrl,
-      'صورة_للعقار': evaluation.propertyImages!.propertyImageUrl,
-      '1_صور_مختلفة_للعقار':
-          evaluation.propertyImages!.propertyVariousImages1Url,
-      '2_صور_مختلفة_للعقار':
-          evaluation.propertyImages!.propertyVariousImages2Url,
-      'صورة_لموقع_العقار_من_القمر_الصناعي':
-          evaluation.propertyImages!.satelliteLocationImageUrl,
-      'صور_لموقع_القطعة_المدنية_حسب_المخطط_العام_لبلدية_الكويت':
-          evaluation.propertyImages!.civilPlotMapImageUrl,
-    };
+    if (addressText == null || addressText.isEmpty) return;
 
-    for (String tagName in imageMapping.keys) {
-      String? imageUrl = imageMapping[tagName];
-      if (imageUrl != null && imageUrl.isNotEmpty) {
-        await _insertImageIntoContentControl(xmlDoc, tagName, imageUrl);
-      }
-    }
-  }
+    bool found = false;
 
-  // Replace hyperlinks
-  void _replaceHyperlinks(XmlDocument xmlDoc, EvaluationModel evaluation) {
-    if (evaluation.propertyImages?.locationAddressText != null) {
-      String addressText = evaluation.propertyImages!.locationAddressText!;
-      String addressLink =
-          evaluation.propertyImages?.locationAddressLink ?? '#';
-
-      _createHyperlink(xmlDoc, 'موقع_العقار', addressText, addressLink);
-    }
-  }
-
-  // Insert image into content control
-  Future<void> _insertImageIntoContentControl(
-      XmlDocument xmlDoc, String tagName, String imageUrl) async {
-    try {
-      // Download image
-      http.Response response = await http.get(Uri.parse(imageUrl));
-      if (response.statusCode != 200) return;
-
-      List<int> imageBytes = response.bodyBytes;
-
-      // Find the picture content control
-      for (XmlElement element in xmlDoc.findAllElements('w:sdt')) {
-        XmlElement? tagElement = element
-            .findElements('w:sdtPr')
-            .firstOrNull
-            ?.findElements('w:tag')
-            .firstOrNull;
-
-        if (tagElement?.getAttribute('w:val') == tagName) {
-          // This is simplified - full implementation requires:
-          // 1. Adding image to archive
-          // 2. Creating relationships
-          // 3. Generating proper image XML
-          // For now, we'll just add a placeholder
-          _replaceContentControlText(element, '[Image: $tagName]');
-        }
-      }
-    } catch (e) {
-      // Handle image download/insertion error
-      print('Failed to insert image for $tagName: $e');
-    }
-  }
-
-  // Create hyperlink
-  void _createHyperlink(
-      XmlDocument xmlDoc, String tagName, String text, String url) {
-    for (XmlElement element in xmlDoc.findAllElements('w:sdt')) {
-      XmlElement? tagElement = element
+    // APPROACH 1: Check content control with tag موقع_العقار
+    for (XmlElement sdt in xmlDoc.findAllElements('w:sdt')) {
+      XmlElement? tagElement = sdt
           .findElements('w:sdtPr')
           .firstOrNull
           ?.findElements('w:tag')
           .firstOrNull;
 
-      if (tagElement?.getAttribute('w:val') == tagName) {
-        // Simplified hyperlink creation
-        _replaceContentControlText(element, '$text ($url)');
+      if (tagElement?.getAttribute('w:val') == 'موقع_العقار') {
+        List<XmlElement> textElements = sdt.findAllElements('w:t').toList();
+        if (textElements.isNotEmpty) {
+          textElements.first.innerText = addressText;
+          for (int i = 1; i < textElements.length; i++) {
+            textElements[i].innerText = '';
+          }
+          found = true;
+          break;
+        }
+      }
+    }
+
+    // APPROACH 2: Find hyperlinks with placeholder text
+    if (!found) {
+      for (XmlElement hyperlink in xmlDoc.findAllElements('w:hyperlink')) {
+        List<XmlElement> textElements =
+            hyperlink.findAllElements('w:t').toList();
+        String combinedText = textElements.map((e) => e.innerText).join('');
+
+        if (combinedText.contains('موقع_العقار') ||
+            combinedText.contains('موقع العقار') ||
+            combinedText.contains('موقع')) {
+          if (textElements.isNotEmpty) {
+            textElements.first.innerText = addressText;
+            for (int i = 1; i < textElements.length; i++) {
+              textElements[i].innerText = '';
+            }
+            found = true;
+          }
+          break;
+        }
+      }
+    }
+
+    // APPROACH 3: Find ANY text containing the placeholder
+    if (!found) {
+      for (XmlElement textEl in xmlDoc.findAllElements('w:t')) {
+        if (textEl.innerText.contains('موقع_العقار') ||
+            textEl.innerText.contains('موقع العقار')) {
+          textEl.innerText = addressText;
+          break;
+        }
       }
     }
   }
@@ -259,6 +398,7 @@ class WordGenerationService {
       case 'تاريخ_طلب_التقييم':
         return _formatDate(evaluation.generalInfo?.requestDate);
       case 'تاريخ_إصدار_التقييم':
+      case 'تاريخ_اصدار_التقييم': // Alternative spelling without hamza
         return _formatDate(evaluation.generalInfo?.issueDate);
       case 'تاريخ_الكشف':
         return _formatDate(evaluation.generalInfo?.inspectionDate);
@@ -279,6 +419,7 @@ class WordGenerationService {
       case 'تاريخ_الوثيقة':
         return _formatDate(evaluation.generalPropertyInfo?.documentDate);
       case 'المساحة_م2':
+      case 'المساحة': // Footer uses shorter name
         return evaluation.generalPropertyInfo?.areaSize?.toString();
       case 'نوع_العقار':
         return evaluation.generalPropertyInfo?.propertyType;
@@ -325,6 +466,14 @@ class WordGenerationService {
 
       // Floors - الوصف العام للعقار
       case 'عدد_الأدوار':
+        // Show floor names joined with " + " (e.g., "السرداب + الأرضي")
+        if (evaluation.floors != null && evaluation.floors!.isNotEmpty) {
+          return evaluation.floors!
+              .where((floor) =>
+                  floor.floorName != null && floor.floorName!.isNotEmpty)
+              .map((floor) => floor.floorName!)
+              .join(' + ');
+        }
         return evaluation.floorsCount?.toString();
 
       // Area Details - تفاصيل المنطقة المحيطة بالعقار
@@ -378,13 +527,96 @@ class WordGenerationService {
         return evaluation.additionalData?.buildingRatio;
       case 'حسب':
         return evaluation.additionalData?.accordingTo;
-      case 'القيمة_الإجمالية':
-        return evaluation.additionalData?.totalValue?.toString();
       case 'تاريخ_إصدار_التقييم_النهائي':
         return _formatDate(evaluation.additionalData?.evaluationIssueDate);
 
+      // Building and Land Cost - تكلفة المباني والارض (Step 10)
+      case 'مساحة_البناء':
+        return _formatNumber(evaluation.buildingLandCost?.buildingArea);
+      case 'مساحة_البناء_دم2':
+        return _formatNumber(evaluation.buildingLandCost?.buildingAreaPM2);
+      case 'تكلفة_مساحة_البناء':
+        return _formatNumber(
+            evaluation.buildingLandCost?.buildingAreaTotalCost);
+      case 'التكلفة_الاجمالية_المباشرة':
+        return _formatNumber(evaluation.buildingLandCost?.directTotalCost);
+      case 'التكلفة_الغير_مباشرة_نسبة':
+        return '${evaluation.buildingLandCost?.indirectCostPercentage ?? 0}%';
+      case 'التكلفة_الغير_مباشرة':
+        return _formatNumber(evaluation.buildingLandCost?.indirectCostValue);
+      case 'تكلفة_البناء_الاجمالية':
+        return _formatNumber(evaluation.buildingLandCost?.totalBuildingCost);
+      case 'الاستهلاك_نسبة':
+        return '${evaluation.buildingLandCost?.depreciationPercentage ?? 0}%';
+      case 'الاستهلاك':
+        return _formatNumber(evaluation.buildingLandCost?.depreciationValue);
+      case 'قيمة_المباني_بعد_خصم_الاستهلاك':
+        return _formatNumber(
+            evaluation.buildingLandCost?.buildingValueAfterDepreciation);
+      case 'مساحة_الارض':
+        return _formatNumber(evaluation.buildingLandCost?.landArea);
+      case 'مساحة_الارض_دم2':
+      case 'سعر_المتر':
+        return _formatNumber(evaluation.buildingLandCost?.landAreaPM2);
+      case 'اجمالي_تكلفة_مساحة_الأرض':
+        return _formatNumber(evaluation.buildingLandCost?.totalCostOfLandArea);
+      case 'القيمة_بطريقة_التكلفة':
+        return _formatNumber(evaluation.buildingLandCost?.valueByCostMethod);
+
+      // Economic Income - الدخل الاقتصادي (Step 11)
+      case 'الاجمالي_الشهري':
+      case 'الإجمالي_الشهري':
+        return _formatNumber(evaluation.economicIncome?.monthlyTotalIncome);
+      case 'اجمالي_العدد':
+        return evaluation.economicIncome?.totalUnitCount.toString();
+      case 'الدخل_الاجمالي_السنوي':
+        return _formatNumber(evaluation.economicIncome?.annualTotalIncome);
+      case 'معدل_الرسملة':
+        return '${evaluation.economicIncome?.capitalizationRate ?? 0}%';
+      case 'الايجار_الشهري_للعقار':
+        return _formatNumber(evaluation.economicIncome?.monthlyPropertyRent);
+      case 'القيمة_الإجمالية':
+      case 'القيمة_الاجمالية':
+        // Now auto-calculated from Economic Income Step 11
+        return _formatNumber(evaluation.economicIncome?.finalTotalValue);
+
       default:
         return null;
+    }
+  }
+
+  // Format number with commas
+  String? _formatNumber(double? value) {
+    if (value == null) return null;
+    return value.toStringAsFixed(0).replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+  }
+
+  // Process footer XML files (footer1.xml, footer2.xml, etc.)
+  // Process header and footer XML files (header1.xml, footer1.xml, etc.)
+  void _processHeadersAndFooters(Archive archive, EvaluationModel evaluation) {
+    for (ArchiveFile file in archive) {
+      // Check for both header and footer files
+      bool isHeader =
+          file.name.startsWith('word/header') && file.name.endsWith('.xml');
+      bool isFooter =
+          file.name.startsWith('word/footer') && file.name.endsWith('.xml');
+
+      if (isHeader || isFooter) {
+        try {
+          String content = utf8.decode(file.content);
+          XmlDocument xmlDoc = XmlDocument.parse(content);
+
+          // Replace text fields
+          _replaceTextFields(xmlDoc, evaluation);
+
+          // Store modified content
+          _modifiedHeadersFooters[file.name] =
+              xmlDoc.toXmlString(pretty: false);
+        } catch (e) {
+          // Skip if file can't be processed
+        }
+      }
     }
   }
 
@@ -408,37 +640,236 @@ class WordGenerationService {
     return null;
   }
 
-  Future<Archive> _createModifiedArchive(
-      Archive originalArchive, String modifiedXml) async {
+  // Generate relationship IDs for new images BEFORE modifying XML
+  void _generateImageRelationshipIds(String relsXml) {
+    // Find the highest existing rId
+    RegExp rIdPattern = RegExp(r'Id="rId(\d+)"');
+    Iterable<Match> matches = rIdPattern.allMatches(relsXml);
+    int maxRId = 0;
+    for (Match match in matches) {
+      int rId = int.parse(match.group(1)!);
+      if (rId > maxRId) maxRId = rId;
+    }
+
+    // Generate relationship IDs for each new image
+    int imageIndex = 1;
+    for (String imagePath in _downloadedImages.keys) {
+      String imageName = imagePath.split('/').last;
+      int newRId = maxRId + imageIndex;
+      _imageRelationshipIds[imageName] = 'rId$newRId';
+      imageIndex++;
+    }
+  }
+
+  // Update image references in content controls to use new relationship IDs
+  void _updateImageReferences(XmlDocument xmlDoc) {
+    // Update image references
+    for (XmlElement sdt in xmlDoc.findAllElements('w:sdt')) {
+      XmlElement? tagElement = sdt
+          .findElements('w:sdtPr')
+          .firstOrNull
+          ?.findElements('w:tag')
+          .firstOrNull;
+
+      String? tagValue = tagElement?.getAttribute('w:val');
+      if (tagValue == null) continue;
+
+      // Check if this tag has a corresponding new image (try exact match first)
+      String? newImageFilename = _tagToImageMap[tagValue];
+
+      // If not found, try matching with flexible patterns
+      if (newImageFilename == null) {
+        // Normalize tag for comparison (remove extra spaces/underscores, normalize Arabic letters)
+        String normalizedTag = tagValue
+            .replaceAll('ه', 'ة') // Normalize ه to ة
+            .replaceAll('ي', 'ى') // Normalize ي to ى
+            .replaceAll(' ', '_')
+            .toLowerCase();
+
+        for (var entry in _tagToImageMap.entries) {
+          String normalizedKey = entry.key
+              .replaceAll('ه', 'ة')
+              .replaceAll('ي', 'ى')
+              .replaceAll(' ', '_')
+              .toLowerCase();
+
+          // Try if the template tag contains our key or vice versa
+          if (normalizedTag.contains(normalizedKey) ||
+              normalizedKey.contains(normalizedTag) ||
+              tagValue.contains(entry.key) ||
+              entry.key.contains(tagValue)) {
+            newImageFilename = entry.value;
+            break;
+          }
+
+          // Also check for partial matches with key parts
+          if (tagValue.contains('مختلفة') || tagValue.contains('مختلفه')) {
+            if (tagValue.contains('1') && entry.key.contains('1')) {
+              newImageFilename = entry.value;
+              break;
+            }
+            if (tagValue.contains('2') && entry.key.contains('2')) {
+              newImageFilename = entry.value;
+              break;
+            }
+          }
+        }
+      }
+
+      if (newImageFilename == null) continue;
+
+      String? newRId = _imageRelationshipIds[newImageFilename];
+      if (newRId == null) continue;
+
+      // Find the blip element and update its embed attribute
+      for (XmlElement blip in sdt.findAllElements('a:blip')) {
+        blip.setAttribute('r:embed', newRId);
+      }
+    }
+  }
+
+  Future<Archive> _createModifiedArchive(Archive originalArchive,
+      String modifiedXml, EvaluationModel evaluation) async {
     Archive newArchive = Archive();
+
+    // Convert XML to UTF-8 bytes (important for Arabic text!)
+    List<int> xmlBytes = utf8.encode(modifiedXml);
+
+    // Get the location link URL directly from evaluation
+    String? locationUrl = evaluation.propertyImages?.locationAddressLink;
+
+    // Build updated relationships XML (for images and hyperlink URL)
+    String? updatedRelsXml;
+
+    ArchiveFile? relsFile =
+        _findFile(originalArchive, 'word/_rels/document.xml.rels');
+    if (relsFile != null) {
+      String relsContent = utf8.decode(relsFile.content);
+
+      // Replace the placeholder hyperlink URL with actual location link
+      if (locationUrl != null && locationUrl.isNotEmpty) {
+        // Use regex to find ANY URL containing "location_placeholder" (case-insensitive)
+        // This handles various formats Word might use
+        RegExp placeholderPattern = RegExp(
+          r'Target="[^"]*location_placeholder[^"]*"',
+          caseSensitive: false,
+        );
+
+        if (placeholderPattern.hasMatch(relsContent)) {
+          relsContent = relsContent.replaceAllMapped(
+            placeholderPattern,
+            (match) => 'Target="$locationUrl"',
+          );
+        }
+
+        // Also try simple string replacements as fallback
+        relsContent = relsContent
+            .replaceAll('https://location_placeholder/', locationUrl)
+            .replaceAll('https://location_placeholder', locationUrl)
+            .replaceAll('http://location_placeholder/', locationUrl)
+            .replaceAll('http://location_placeholder', locationUrl);
+
+        updatedRelsXml = relsContent;
+      }
+
+      // Add new image relationships if any
+      if (_downloadedImages.isNotEmpty) {
+        StringBuffer newRels = StringBuffer();
+        for (String imagePath in _downloadedImages.keys) {
+          String imageName = imagePath.split('/').last;
+          String? rId = _imageRelationshipIds[imageName];
+          if (rId != null) {
+            newRels.writeln(
+                '<Relationship Id="$rId" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/$imageName"/>');
+          }
+        }
+
+        String baseContent = updatedRelsXml ?? relsContent;
+        updatedRelsXml = baseContent.replaceFirst(
+            '</Relationships>', '${newRels.toString()}</Relationships>');
+      }
+    }
+
+    // Update Content_Types to include jpg if needed
+    String? updatedContentTypes;
+    ArchiveFile? contentTypesFile =
+        _findFile(originalArchive, '[Content_Types].xml');
+    if (contentTypesFile != null && _downloadedImages.isNotEmpty) {
+      String contentTypesContent = utf8.decode(contentTypesFile.content);
+      if (!contentTypesContent.contains('Extension="jpg"')) {
+        updatedContentTypes = contentTypesContent.replaceFirst('</Types>',
+            '<Default Extension="jpg" ContentType="image/jpeg"/></Types>');
+      }
+    }
 
     for (ArchiveFile file in originalArchive) {
       if (file.name == 'word/document.xml') {
+        // Replace document.xml with modified version
         newArchive.addFile(ArchiveFile(
           file.name,
-          modifiedXml.length,
-          modifiedXml.codeUnits,
+          xmlBytes.length,
+          xmlBytes,
+        ));
+      } else if (file.name == 'word/_rels/document.xml.rels' &&
+          updatedRelsXml != null) {
+        // Replace relationships file with updated version
+        List<int> relsBytes = utf8.encode(updatedRelsXml);
+        newArchive.addFile(ArchiveFile(
+          file.name,
+          relsBytes.length,
+          relsBytes,
+        ));
+      } else if (file.name == '[Content_Types].xml' &&
+          updatedContentTypes != null) {
+        // Replace content types file
+        List<int> ctBytes = utf8.encode(updatedContentTypes);
+        newArchive.addFile(ArchiveFile(
+          file.name,
+          ctBytes.length,
+          ctBytes,
+        ));
+      } else if (_modifiedHeadersFooters.containsKey(file.name)) {
+        // Replace header/footer file with modified version
+        List<int> modifiedBytes =
+            utf8.encode(_modifiedHeadersFooters[file.name]!);
+        newArchive.addFile(ArchiveFile(
+          file.name,
+          modifiedBytes.length,
+          modifiedBytes,
         ));
       } else {
+        // Keep original file
         newArchive.addFile(file);
       }
+    }
+
+    // Add NEW image files to the archive
+    for (var entry in _downloadedImages.entries) {
+      newArchive.addFile(ArchiveFile(
+        entry.key,
+        entry.value.length,
+        entry.value,
+      ));
     }
 
     return newArchive;
   }
 
   String _generateFileName(EvaluationModel evaluation) {
-    // Format: area_plotNumber_parcelNumber.docx
-    String area = evaluation.generalPropertyInfo?.area ?? 'منطقة';
-    String plotNumber = evaluation.generalPropertyInfo?.plotNumber ?? 'قطعة';
-    String parcelNumber =
-        evaluation.generalPropertyInfo?.parcelNumber ?? 'قسيمة';
+    // Get area name, plot number, and parcel number from evaluation
+    final areaName = evaluation.generalPropertyInfo?.area ?? '';
+    final plotNumber = evaluation.generalPropertyInfo?.plotNumber ?? '';
+    final parcelNumber = evaluation.generalPropertyInfo?.parcelNumber ?? '';
 
-    // Clean filename (remove special characters)
-    area = area.replaceAll(RegExp(r'[^\w\u0600-\u06FF]'), '_');
-    plotNumber = plotNumber.replaceAll(RegExp(r'[^\w\u0600-\u06FF]'), '_');
-    parcelNumber = parcelNumber.replaceAll(RegExp(r'[^\w\u0600-\u06FF]'), '_');
+    // Create filename: (اسم المنطقة) قطعة (رقم القطعة) قسيمة (رقم القسيمة)
+    String fileName = '$areaName قطعة $plotNumber قسيمة $parcelNumber';
 
-    return '${area}_${plotNumber}_$parcelNumber.docx';
+    // Remove any characters that might cause issues with file systems
+    fileName = fileName.replaceAll(RegExp(r'[/\\:*?"<>|]'), '');
+
+    // Trim any extra spaces
+    fileName = fileName.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+    return '$fileName.docx';
   }
 }

@@ -7,7 +7,7 @@ part of 'evaluation_list_provider.dart';
 // **************************************************************************
 
 String _$evaluationListNotifierHash() =>
-    r'ef5074c942ed6a99c94d3ebb8e819c69a1fa5a5f';
+    r'9cc8076fed1b34e1044e62c451f5b6554c5bb71f';
 
 /// See also [EvaluationListNotifier].
 @ProviderFor(EvaluationListNotifier)
@@ -25,5 +25,3 @@ final evaluationListNotifierProvider = AutoDisposeNotifierProvider<
 typedef _$EvaluationListNotifier = AutoDisposeNotifier<EvaluationListState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
-
-

@@ -7,7 +7,7 @@ part of 'form_navigation_provider.dart';
 // **************************************************************************
 
 String _$formNavigationNotifierHash() =>
-    r'2a241401d85bebc0c07ff678f2bb92e824dd23e0';
+    r'471b2af2ec3f94e3c48e3cf9fcf594bb281a823a';
 
 /// See also [FormNavigationNotifier].
 @ProviderFor(FormNavigationNotifier)
@@ -25,5 +25,3 @@ final formNavigationNotifierProvider = AutoDisposeNotifierProvider<
 typedef _$FormNavigationNotifier = AutoDisposeNotifier<FormNavigationState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
-
-
