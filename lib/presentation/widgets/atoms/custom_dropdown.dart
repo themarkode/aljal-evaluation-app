@@ -78,7 +78,7 @@ class CustomDropdown extends StatelessWidget {
         Directionality(
           textDirection: TextDirection.rtl,
           child: DropdownButtonFormField<String>(
-            initialValue: value,
+            value: value,
             items: items.map((item) {
               return DropdownMenuItem<String>(
                 value: item,
