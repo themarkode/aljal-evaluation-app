@@ -401,9 +401,9 @@ class _ViewEvaluationScreenState extends ConsumerState<ViewEvaluationScreen> {
         AppSpacing.verticalSpaceSM,
         _buildInfoRow('نظام البناء', data?.buildingSystem),
         AppSpacing.verticalSpaceSM,
-        _buildInfoRow('القيمة الإجمالية', data?.totalValue?.toString()),
+        _buildInfoRow('النسبة', data?.buildingRatio),
         AppSpacing.verticalSpaceSM,
-        _buildInfoRow('تاريخ الإصدار', data?.evaluationIssueDate?.toString()),
+        _buildInfoRow('حسب', data?.accordingTo),
       ],
     );
   }

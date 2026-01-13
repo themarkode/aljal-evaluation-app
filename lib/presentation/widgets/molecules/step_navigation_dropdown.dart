@@ -28,7 +28,7 @@ const List<StepInfo> allSteps = [
   StepInfo(stepNumber: 7, title: 'المخططات الموقعية', routeName: RouteNames.formStep7),
   StepInfo(stepNumber: 8, title: 'صور العقار', routeName: RouteNames.formStep8),
   StepInfo(stepNumber: 9, title: 'بيانات إضافية', routeName: RouteNames.formStep9),
-  StepInfo(stepNumber: 10, title: 'تكلفة المباني والأرض', routeName: RouteNames.formStep10),
+  StepInfo(stepNumber: 10, title: 'القيمة بطريقة التكلفة', routeName: RouteNames.formStep10),
   StepInfo(stepNumber: 11, title: 'الدخل الاقتصادي', routeName: RouteNames.formStep11),
 ];
 

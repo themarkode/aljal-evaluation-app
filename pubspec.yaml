@@ -38,12 +38,13 @@ dependencies:
   http: ^1.1.0             # For HTTP requests (also used for DOCX to PDF conversion)
 
   # Utilities
-  intl: ^0.20.2            # Date formatting
+  intl: ^0.19.0            # Date formatting
   crypto: ^3.0.3           # Password hashing (SHA-256)
   path_provider: ^2.1.4    # File system access
   permission_handler: ^11.3.1  # File permissions
   open_file: ^3.5.6        # Open generated documents
   share_plus: ^10.1.4      # Share files to other apps
+  tafkeet: ^1.2.3          # Convert numbers to Arabic words (تفقيط)
   
   
 
@@ -52,7 +53,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
   riverpod_generator: ^2.4.3
-  build_runner: ^2.5.4
+  build_runner: ^2.4.13
   flutter_launcher_icons: ^0.14.3
   msix: ^3.16.0  # Windows MSIX installer
 

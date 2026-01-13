@@ -42,6 +42,8 @@ class EvaluationService {
         sitePlans: evaluation.sitePlans,
         propertyImages: evaluation.propertyImages,
         additionalData: evaluation.additionalData,
+        buildingLandCost: evaluation.buildingLandCost,
+        economicIncome: evaluation.economicIncome,
       );
 
       await docRef.set(evaluationWithId.toJson());
@@ -74,6 +76,8 @@ class EvaluationService {
         sitePlans: evaluation.sitePlans,
         propertyImages: evaluation.propertyImages,
         additionalData: evaluation.additionalData,
+        buildingLandCost: evaluation.buildingLandCost,
+        economicIncome: evaluation.economicIncome,
       );
 
       await _collection

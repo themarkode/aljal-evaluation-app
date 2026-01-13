@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:aljal_evaluation/data/models/pages_models/building_land_cost_model.dart';
+import 'package:aljal_evaluation/data/models/pages_models/economic_income_model.dart';
 import 'package:aljal_evaluation/data/models/pages_models/floor_model.dart';
 import 'package:archive/archive.dart';
+import 'package:tafkeet/tafkeet.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:xml/xml.dart';
@@ -242,10 +245,11 @@ class WordGenerationService {
     }
   }
 
-  // Replace repeating section for floors table
+  // Replace repeating sections for all dynamic tables
   void _replaceRepeatingSection(
       XmlDocument xmlDoc, EvaluationModel evaluation) {
-    if (evaluation.floors == null || evaluation.floors!.isEmpty) return;
+    // Collect all repeating sections first to avoid modification during iteration
+    List<MapEntry<XmlElement, String>> sectionsToProcess = [];
 
     for (XmlElement element in xmlDoc.findAllElements('w:sdt')) {
       XmlElement? tagElement = element
@@ -255,9 +259,30 @@ class WordGenerationService {
           .firstOrNull;
 
       String? tagValue = tagElement?.getAttribute('w:val');
+      if (tagValue != null) {
+        sectionsToProcess.add(MapEntry(element, tagValue));
+      }
+    }
 
-      if (tagValue == 'جدول_الأدوار') {
+    // Process each repeating section
+    for (var entry in sectionsToProcess) {
+      final element = entry.key;
+      final tagValue = entry.value;
+
+      if (tagValue == 'جدول_الأدوار' &&
+          evaluation.floors != null &&
+          evaluation.floors!.isNotEmpty) {
         _generateFloorRows(element, evaluation.floors!);
+      } else if (tagValue == 'جدول_المساحات_الإضافية' &&
+          evaluation.buildingLandCost?.additionalAreaCosts != null &&
+          evaluation.buildingLandCost!.additionalAreaCosts!.isNotEmpty) {
+        _generateAdditionalAreaRows(
+            element, evaluation.buildingLandCost!.additionalAreaCosts!);
+      } else if (tagValue == 'جدول_وحدات_الدخل_الاقتصادي' &&
+          evaluation.economicIncome?.incomeUnits != null &&
+          evaluation.economicIncome!.incomeUnits!.isNotEmpty) {
+        _generateIncomeUnitRows(
+            element, evaluation.economicIncome!.incomeUnits!);
       }
     }
   }
@@ -299,6 +324,120 @@ class WordGenerationService {
           _replaceContentControlText(sdt, floor.floorName ?? '');
         } else if (rowTagValue == 'تفاصيل_الدور') {
           _replaceContentControlText(sdt, floor.floorDetails ?? '');
+        }
+      }
+
+      newRows.add(newRow);
+    }
+
+    // Insert all new rows at the position of the repeating section
+    for (int i = 0; i < newRows.length; i++) {
+      parent.children.insert(insertIndex + i, newRows[i]);
+    }
+
+    // Remove the original repeating section (which contains the template)
+    repeatingSection.remove();
+  }
+
+  // Generate additional area cost rows for repeating section (Step 10)
+  void _generateAdditionalAreaRows(
+      XmlElement repeatingSection, List<AreaCostEntry> areas) {
+    // Find the template row within the repeating section
+    final rows = repeatingSection.findAllElements('w:tr').toList();
+    if (rows.isEmpty) return;
+
+    XmlElement templateRow = rows.first;
+
+    // Find the parent of the repeating section to insert rows in the correct place
+    XmlElement? parent = repeatingSection.parent as XmlElement?;
+    if (parent == null) return;
+
+    // Find the index of the repeating section in the parent
+    int insertIndex = parent.children.indexOf(repeatingSection);
+    if (insertIndex == -1) return;
+
+    // Create new rows for each area and insert them BEFORE the repeating section
+    List<XmlElement> newRows = [];
+    for (AreaCostEntry area in areas) {
+      XmlElement newRow = templateRow.copy();
+
+      // Find content controls within this row and replace them
+      for (XmlElement sdt in newRow.findAllElements('w:sdt')) {
+        XmlElement? rowTagElement = sdt
+            .findElements('w:sdtPr')
+            .firstOrNull
+            ?.findElements('w:tag')
+            .firstOrNull;
+
+        String? rowTagValue = rowTagElement?.getAttribute('w:val');
+
+        if (rowTagValue == 'اسم_المساحة') {
+          _replaceContentControlText(sdt, area.areaName ?? '');
+        } else if (rowTagValue == 'المساحة') {
+          _replaceContentControlText(sdt, _formatNumber(area.area) ?? '');
+        } else if (rowTagValue == 'د/م2') {
+          _replaceContentControlText(sdt, _formatNumber(area.pricePerM2) ?? '');
+        } else if (rowTagValue == 'اجمالي_التكلفة') {
+          _replaceContentControlText(sdt, _formatNumber(area.totalCost) ?? '');
+        }
+      }
+
+      newRows.add(newRow);
+    }
+
+    // Insert all new rows at the position of the repeating section
+    for (int i = 0; i < newRows.length; i++) {
+      parent.children.insert(insertIndex + i, newRows[i]);
+    }
+
+    // Remove the original repeating section (which contains the template)
+    repeatingSection.remove();
+  }
+
+  // Generate economic income unit rows for repeating section (Step 11)
+  void _generateIncomeUnitRows(
+      XmlElement repeatingSection, List<EconomicIncomeUnit> units) {
+    // Find the template row within the repeating section
+    final rows = repeatingSection.findAllElements('w:tr').toList();
+    if (rows.isEmpty) return;
+
+    XmlElement templateRow = rows.first;
+
+    // Find the parent of the repeating section to insert rows in the correct place
+    XmlElement? parent = repeatingSection.parent as XmlElement?;
+    if (parent == null) return;
+
+    // Find the index of the repeating section in the parent
+    int insertIndex = parent.children.indexOf(repeatingSection);
+    if (insertIndex == -1) return;
+
+    // Create new rows for each unit and insert them BEFORE the repeating section
+    List<XmlElement> newRows = [];
+    for (EconomicIncomeUnit unit in units) {
+      XmlElement newRow = templateRow.copy();
+
+      // Find content controls within this row and replace them
+      for (XmlElement sdt in newRow.findAllElements('w:sdt')) {
+        XmlElement? rowTagElement = sdt
+            .findElements('w:sdtPr')
+            .firstOrNull
+            ?.findElements('w:tag')
+            .firstOrNull;
+
+        String? rowTagValue = rowTagElement?.getAttribute('w:val');
+
+        if (rowTagValue == 'العدد') {
+          _replaceContentControlText(sdt, unit.unitCount?.toString() ?? '');
+        } else if (rowTagValue == 'نوع_الوحدة') {
+          _replaceContentControlText(sdt, unit.unitType ?? '');
+        } else if (rowTagValue == 'المساحة_م2') {
+          _replaceContentControlText(sdt, _formatNumber(unit.unitArea) ?? '');
+        } else if (rowTagValue == 'ايجار_اقتصادي') {
+          _replaceContentControlText(
+              sdt, _formatNumber(unit.economicRent) ?? '');
+        } else if (rowTagValue == 'دخل_شهري') {
+          _replaceContentControlText(
+              sdt, _formatNumber(unit.monthlyIncome) ?? '');
         }
       }
 
@@ -418,8 +557,7 @@ class WordGenerationService {
         return evaluation.generalPropertyInfo?.documentNumber;
       case 'تاريخ_الوثيقة':
         return _formatDate(evaluation.generalPropertyInfo?.documentDate);
-      case 'المساحة_م2':
-      case 'المساحة': // Footer uses shorter name
+      case 'مساحة_الارض_م2': // Used in Step 2, Step 10, and Footer
         return evaluation.generalPropertyInfo?.areaSize?.toString();
       case 'نوع_العقار':
         return evaluation.generalPropertyInfo?.propertyType;
@@ -527,10 +665,10 @@ class WordGenerationService {
         return evaluation.additionalData?.buildingRatio;
       case 'حسب':
         return evaluation.additionalData?.accordingTo;
-      case 'تاريخ_إصدار_التقييم_النهائي':
-        return _formatDate(evaluation.additionalData?.evaluationIssueDate);
+      // Note: تاريخ إصدار التقييم is in Step 1 (generalInfo.issueDate), not Step 9
+      // Note: القيمة الإجمالية is auto-calculated in Step 11 (economicIncome.finalTotalValue)
 
-      // Building and Land Cost - تكلفة المباني والارض (Step 10)
+      // Building and Land Cost - القيمة بطريقة التكلفة (Step 10)
       case 'مساحة_البناء':
         return _formatNumber(evaluation.buildingLandCost?.buildingArea);
       case 'مساحة_البناء_دم2':
@@ -541,21 +679,19 @@ class WordGenerationService {
       case 'التكلفة_الاجمالية_المباشرة':
         return _formatNumber(evaluation.buildingLandCost?.directTotalCost);
       case 'التكلفة_الغير_مباشرة_نسبة':
-        return '${evaluation.buildingLandCost?.indirectCostPercentage ?? 0}%';
+        return '${evaluation.buildingLandCost?.indirectCostPercentage ?? 0} ';
       case 'التكلفة_الغير_مباشرة':
         return _formatNumber(evaluation.buildingLandCost?.indirectCostValue);
       case 'تكلفة_البناء_الاجمالية':
         return _formatNumber(evaluation.buildingLandCost?.totalBuildingCost);
       case 'الاستهلاك_نسبة':
-        return '${evaluation.buildingLandCost?.depreciationPercentage ?? 0}%';
+        return '${evaluation.buildingLandCost?.depreciationPercentage ?? 0} ';
       case 'الاستهلاك':
         return _formatNumber(evaluation.buildingLandCost?.depreciationValue);
       case 'قيمة_المباني_بعد_خصم_الاستهلاك':
         return _formatNumber(
             evaluation.buildingLandCost?.buildingValueAfterDepreciation);
-      case 'مساحة_الارض':
-        return _formatNumber(evaluation.buildingLandCost?.landArea);
-      case 'مساحة_الارض_دم2':
+      // Note: مساحة_الارض_م2 is handled above (shared with Step 2)
       case 'سعر_المتر':
         return _formatNumber(evaluation.buildingLandCost?.landAreaPM2);
       case 'اجمالي_تكلفة_مساحة_الأرض':
@@ -572,13 +708,14 @@ class WordGenerationService {
       case 'الدخل_الاجمالي_السنوي':
         return _formatNumber(evaluation.economicIncome?.annualTotalIncome);
       case 'معدل_الرسملة':
-        return '${evaluation.economicIncome?.capitalizationRate ?? 0}%';
+        return '${evaluation.economicIncome?.capitalizationRate ?? 0} ';
       case 'الايجار_الشهري_للعقار':
         return _formatNumber(evaluation.economicIncome?.monthlyPropertyRent);
       case 'القيمة_الإجمالية':
       case 'القيمة_الاجمالية':
-        // Now auto-calculated from Economic Income Step 11
-        return _formatNumber(evaluation.economicIncome?.finalTotalValue);
+        // Now auto-calculated from Economic Income Step 11 with Arabic words
+        return _formatNumberWithArabicWords(
+            evaluation.economicIncome?.finalTotalValue);
 
       default:
         return null;
@@ -588,8 +725,33 @@ class WordGenerationService {
   // Format number with commas
   String? _formatNumber(double? value) {
     if (value == null) return null;
+    if (value == 0) return '0';
     return value.toStringAsFixed(0).replaceAllMapped(
         RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+  }
+
+  // Format number with Arabic words (تفقيط) for Kuwaiti Dinar
+  String? _formatNumberWithArabicWords(double? value) {
+    if (value == null) return null;
+    if (value == 0) return '0 صفر دينار كويتي فقط';
+
+    // Format number with commas
+    final formattedNumber = value.toStringAsFixed(0).replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+
+    // Convert to Arabic words using tafkeet with Kuwaiti Dinar currency
+    try {
+      final arabicWords = Tafkeet.convert(
+        value,
+        lang: Language.ar,
+        currency: Currency.KWD, // Kuwaiti Dinar
+        suffix: 'فقط',
+      );
+      return '$formattedNumber $arabicWords';
+    } catch (e) {
+      // Fallback to just the number if conversion fails
+      return formattedNumber;
+    }
   }
 
   // Process footer XML files (footer1.xml, footer2.xml, etc.)

@@ -11,9 +11,9 @@ import 'package:aljal_evaluation/presentation/widgets/atoms/custom_button.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step_screen_mixin.dart';
 import 'package:aljal_evaluation/data/models/pages_models/building_land_cost_model.dart';
 import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_template.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
-/// Step 10: Building and Land Cost Screen - تكلفة المباني والارض
+/// Step 10: Building and Land Cost Screen - القيمة بطريقة التكلفة
 class Step10BuildingLandCostScreen extends ConsumerStatefulWidget {
   final String? evaluationId;
 
@@ -280,7 +280,7 @@ class _Step10BuildingLandCostScreenState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Section Title
-        _buildSectionTitle('تكلفة المباني والارض'),
+        _buildSectionTitle('القيمة بطريقة التكلفة'),
         AppSpacing.verticalSpaceMD,
 
         // Fixed Building Area Fields (always shown)
@@ -600,7 +600,7 @@ class _Step10BuildingLandCostScreenState
               Expanded(
                 child: CustomTextField(
                   controller: _landAreaController,
-                  label: 'مساحة الارض م٢',
+                  label: 'المساحة م²',
                   hint: '0',
                   keyboardType: TextInputType.number,
                   showValidationDot: false,
@@ -620,7 +620,7 @@ class _Step10BuildingLandCostScreenState
               AppSpacing.horizontalSpaceSM,
               Expanded(
                 child: _buildReadOnlyField(
-                  'اجمالي تكلفة الأرض',
+                  'تكلفة الأرض',
                   _totalCostOfLandArea,
                 ),
               ),
@@ -645,10 +645,15 @@ class _Step10BuildingLandCostScreenState
             borderRadius: AppSpacing.radiusMD,
             border: Border.all(color: AppColors.border),
           ),
-          child: Text(
-            _numberFormat.format(value),
-            style: AppTypography.inputText.copyWith(
-              color: AppColors.textSecondary,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              _numberFormat.format(value),
+              style: AppTypography.inputText.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textDirection: TextDirection.ltr,
             ),
           ),
         ),
@@ -664,16 +669,19 @@ class _Step10BuildingLandCostScreenState
         borderRadius: AppSpacing.radiusMD,
         border: Border.all(color: AppColors.border),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(label, style: AppTypography.fieldTitle),
+          AppSpacing.verticalSpaceXS,
           Text(
             '${_numberFormat.format(value)} د.ك',
             style: AppTypography.bodyLarge.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
             ),
+            textAlign: TextAlign.left,
+            textDirection: TextDirection.ltr,
           ),
         ],
       ),
@@ -688,21 +696,25 @@ class _Step10BuildingLandCostScreenState
         borderRadius: AppSpacing.radiusMD,
         border: Border.all(color: AppColors.primary, width: 2),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             label,
             style: AppTypography.headlineSmall.copyWith(
               color: AppColors.primary,
             ),
+            textAlign: TextAlign.center,
           ),
+          AppSpacing.verticalSpaceSM,
           Text(
             '${_numberFormat.format(value)} د.ك',
             style: AppTypography.headlineMedium.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
             ),
+            textAlign: TextAlign.center,
+            textDirection: TextDirection.ltr,
           ),
         ],
       ),
