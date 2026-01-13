@@ -1,4 +1,4 @@
-// Page name: Step 10 - تكلفة المباني والارض (Building and Land Cost)
+// Page name: Step 10 - القيمة بطريقة التكلفة (Building and Land Cost)
 
 /// Model for additional area cost entries (dynamic table)
 class AreaCostEntry {
@@ -54,7 +54,7 @@ class BuildingLandCostModel {
 
   // Land Area
   // landArea is auto-filled from Step 2 (areaSize)
-  final double? landArea; // مساحة الارض م٢
+  final double? landArea; // المساحة م²
   final double? landAreaPM2; // سعر المتر د.ك - Manual
   // Calculated: totalCostOfLandArea = landArea * landAreaPM2
 

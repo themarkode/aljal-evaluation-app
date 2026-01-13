@@ -11,7 +11,7 @@ import 'package:aljal_evaluation/presentation/widgets/atoms/custom_button.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step_screen_mixin.dart';
 import 'package:aljal_evaluation/data/models/pages_models/economic_income_model.dart';
 import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_template.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 /// Step 11: Economic Income Screen - الدخل الاقتصادي (FINAL STEP)
 class Step11EconomicIncomeScreen extends ConsumerStatefulWidget {
@@ -330,6 +330,10 @@ class _Step11EconomicIncomeScreenState
         _buildMonthlyPropertyRentSection(),
         AppSpacing.verticalSpaceLG,
 
+        // Evaluation Issue Date
+        _buildEvaluationIssueDateSection(),
+        AppSpacing.verticalSpaceMD,
+
         // Final Total Value (تقدير العقار)
         _buildPropertyEvaluationSection(),
       ],
@@ -445,12 +449,15 @@ class _Step11EconomicIncomeScreenState
                 color: AppColors.surface,
                 borderRadius: AppSpacing.radiusSM,
               ),
-              child: Text(
-                _numberFormat.format(unit.monthlyIncome),
-                style: AppTypography.bodySmall.copyWith(
-                  fontWeight: FontWeight.bold,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  _numberFormat.format(unit.monthlyIncome),
+                  style: AppTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
           ),
@@ -516,27 +523,30 @@ class _Step11EconomicIncomeScreenState
         borderRadius: AppSpacing.radiusMD,
         border: Border.all(color: AppColors.border),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('الإجمالي', style: AppTypography.fieldTitle),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Text('الإجمالي', style: AppTypography.fieldTitle),
               Text(
                 'العدد: $_totalUnitCount',
                 style: AppTypography.bodyMedium.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              AppSpacing.horizontalSpaceLG,
-              Text(
-                'الدخل الشهري: ${_numberFormat.format(_monthlyTotalIncome)} د.ك',
-                style: AppTypography.bodyMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
             ],
+          ),
+          AppSpacing.verticalSpaceXS,
+          Text(
+            'الدخل الشهري: ${_numberFormat.format(_monthlyTotalIncome)} د.ك',
+            style: AppTypography.bodyMedium.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+            textAlign: TextAlign.left,
+            textDirection: TextDirection.ltr,
           ),
         ],
       ),
@@ -552,20 +562,19 @@ class _Step11EconomicIncomeScreenState
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Annual Total Income (calculated)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('الدخل الاجمالي السنوي', style: AppTypography.fieldTitle),
-              Text(
-                '${_numberFormat.format(_annualTotalIncome)} د.ك',
-                style: AppTypography.bodyLarge.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
+          Text('الدخل الاجمالي السنوي', style: AppTypography.fieldTitle),
+          AppSpacing.verticalSpaceXS,
+          Text(
+            '${_numberFormat.format(_annualTotalIncome)} د.ك',
+            style: AppTypography.bodyLarge.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+            textAlign: TextAlign.left,
+            textDirection: TextDirection.ltr,
           ),
           AppSpacing.verticalSpaceMD,
           // Capitalization Rate (manual input)
@@ -639,6 +648,43 @@ class _Step11EconomicIncomeScreenState
     );
   }
 
+  Widget _buildEvaluationIssueDateSection() {
+    final evaluation = ref.read(evaluationNotifierProvider);
+    final issueDate = evaluation.generalInfo?.issueDate;
+    
+    String formattedDate = 'غير محدد';
+    if (issueDate != null) {
+      formattedDate = '${issueDate.day}/${issueDate.month}/${issueDate.year}';
+    }
+
+    return Container(
+      padding: AppSpacing.allMD,
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: AppSpacing.radiusMD,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'تاريخ إصدار التقييم',
+            style: AppTypography.fieldTitle.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            formattedDate,
+            style: AppTypography.bodyLarge.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPropertyEvaluationSection() {
     return Container(
       padding: AppSpacing.allLG,
@@ -648,31 +694,40 @@ class _Step11EconomicIncomeScreenState
         border: Border.all(color: AppColors.primary, width: 2),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            'تقدير العقار',
-            style: AppTypography.headlineSmall.copyWith(
-              color: AppColors.primary,
-            ),
-          ),
-          AppSpacing.verticalSpaceMD,
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'القيمة الاجمالية',
-                style: AppTypography.bodyLarge.copyWith(
-                  fontWeight: FontWeight.bold,
+                'تقدير العقار',
+                style: AppTypography.headlineSmall.copyWith(
+                  color: AppColors.primary,
                 ),
               ),
               Text(
-                '${_numberFormat.format(_finalTotalValue)} د.ك',
-                style: AppTypography.headlineMedium.copyWith(
-                  fontWeight: FontWeight.bold,
+                ' : ',
+                style: AppTypography.headlineSmall.copyWith(
+                  color: AppColors.primary,
+                ),
+              ),
+              Text(
+                'القيمة الاجمالية',
+                style: AppTypography.headlineSmall.copyWith(
                   color: AppColors.primary,
                 ),
               ),
             ],
+          ),
+          AppSpacing.verticalSpaceMD,
+          Text(
+            '${_numberFormat.format(_finalTotalValue)} د.ك',
+            style: AppTypography.headlineMedium.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+            textAlign: TextAlign.center,
+            textDirection: TextDirection.ltr,
           ),
         ],
       ),

@@ -62,7 +62,7 @@ class RouteNames {
   /// Form Step 9: بيانات إضافية (Additional Data)
   static const String formStep9 = '/form/step9';
   
-  /// Form Step 10: تكلفة المباني والأرض (Building and Land Cost)
+  /// Form Step 10: القيمة بطريقة التكلفة (Building and Land Cost)
   static const String formStep10 = '/form/step10';
   
   /// Form Step 11: الدخل الاقتصادي (Economic Income)

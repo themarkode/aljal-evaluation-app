@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aljal_evaluation/core/theme/app_colors.dart';
-import 'package:aljal_evaluation/core/theme/app_typography.dart';
 import 'package:aljal_evaluation/core/theme/app_spacing.dart';
 import 'package:aljal_evaluation/core/utils/form_field_helpers.dart';
 import 'package:aljal_evaluation/core/routing/step_navigation.dart';
 import 'package:aljal_evaluation/presentation/providers/evaluation_provider.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_text_field.dart';
-import 'package:aljal_evaluation/presentation/widgets/atoms/custom_date_picker.dart';
 import 'package:aljal_evaluation/presentation/screens/evaluation/steps/step_screen_mixin.dart';
 import 'package:aljal_evaluation/data/models/pages_models/additional_data_model.dart';
 import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_template.dart';
@@ -35,10 +32,6 @@ class _Step9AdditionalDataScreenState
   late TextEditingController _buildingSystemController;
   late TextEditingController _buildingRatioController;
   late TextEditingController _accordingToController;
-  late TextEditingController _totalValueController;
-
-  // Date
-  DateTime? _evaluationIssueDate;
 
   @override
   void initState() {
@@ -50,7 +43,6 @@ class _Step9AdditionalDataScreenState
     _buildingSystemController = TextEditingController();
     _buildingRatioController = TextEditingController();
     _accordingToController = TextEditingController();
-    _totalValueController = TextEditingController();
 
     // Load existing data if editing
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -68,11 +60,6 @@ class _Step9AdditionalDataScreenState
       _buildingSystemController.text = additionalData.buildingSystem ?? '';
       _buildingRatioController.text = additionalData.buildingRatio ?? '';
       _accordingToController.text = additionalData.accordingTo ?? '';
-      _totalValueController.text = additionalData.totalValue?.toString() ?? '';
-
-      setState(() {
-        _evaluationIssueDate = additionalData.evaluationIssueDate;
-      });
     }
   }
 
@@ -83,7 +70,6 @@ class _Step9AdditionalDataScreenState
     _buildingSystemController.dispose();
     _buildingRatioController.dispose();
     _accordingToController.dispose();
-    _totalValueController.dispose();
     super.dispose();
   }
 
@@ -130,8 +116,6 @@ class _Step9AdditionalDataScreenState
       buildingSystem: _buildingSystemController.textOrNull,
       buildingRatio: _buildingRatioController.textOrNull,
       accordingTo: _accordingToController.textOrNull,
-      totalValue: _totalValueController.doubleOrNull,
-      evaluationIssueDate: _evaluationIssueDate,
     );
     ref.read(evaluationNotifierProvider.notifier).updateAdditionalData(additionalData);
   }
@@ -168,12 +152,6 @@ class _Step9AdditionalDataScreenState
         _buildBuildingRatioField(),
         AppSpacing.verticalSpaceMD,
         _buildAccordingToField(),
-        AppSpacing.verticalSpaceMD,
-
-        // Property Valuation Section
-        _buildTotalValueField(),
-        AppSpacing.verticalSpaceMD,
-        _buildEvaluationIssueDateField(),
       ],
     );
   }
@@ -196,16 +174,6 @@ class _Step9AdditionalDataScreenState
         ),
         AppSpacing.verticalSpaceMD,
         _buildAccordingToField(),
-        AppSpacing.verticalSpaceMD,
-
-        // Property Valuation Section
-        Row(
-          children: [
-            Expanded(child: _buildTotalValueField()),
-            AppSpacing.horizontalSpaceMD,
-            Expanded(child: _buildEvaluationIssueDateField()),
-          ],
-        ),
       ],
     );
   }
@@ -248,41 +216,6 @@ class _Step9AdditionalDataScreenState
       label: 'حسب',
       hint: 'حسب',
       showValidationDot: true,
-    );
-  }
-
-  Widget _buildTotalValueField() {
-    return CustomTextField(
-      controller: _totalValueController,
-      label: 'القيمة الإجمالية',
-      hint: '0.00',
-      keyboardType: TextInputType.number,
-      showValidationDot: true,
-      suffixIcon: Padding(
-        padding: AppSpacing.horizontalSM,
-        child: Center(
-          widthFactor: 1.0,
-          child: Text(
-        'د.ك',
-        style: AppTypography.bodyMedium.copyWith(
-          color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEvaluationIssueDateField() {
-    return CustomDatePicker(
-      label: 'تاريخ إصدار التقييم النهائي',
-      value: _evaluationIssueDate,
-      showValidationDot: true,
-      onChanged: (date) {
-        setState(() {
-          _evaluationIssueDate = date;
-        });
-      },
     );
   }
 }

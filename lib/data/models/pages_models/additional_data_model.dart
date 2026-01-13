@@ -1,7 +1,5 @@
 // Page name in Figma: 1.8 New Form
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class AdditionalDataModel {
   // ✅ Word fields (green dots - will be mapped to Word document)
 
@@ -9,16 +7,14 @@ class AdditionalDataModel {
   final String? buildingSystem; // نظام البناء
   final String? buildingRatio; // النسبة
   final String? accordingTo; // حسب
-  final double? totalValue; // القيمة الإجمالية
-  final DateTime? evaluationIssueDate; // تاريخ إصدار التقييم
+  // Note: القيمة الإجمالية is now auto-calculated in Step 11 (EconomicIncomeModel)
+  // Note: تاريخ إصدار التقييم is in Step 1 (GeneralInfoModel.issueDate)
 
   AdditionalDataModel({
     this.evaluationPurpose,
     this.buildingSystem,
     this.buildingRatio,
     this.accordingTo,
-    this.totalValue,
-    this.evaluationIssueDate,
   });
 
   factory AdditionalDataModel.fromJson(Map<String, dynamic> json) {
@@ -27,10 +23,6 @@ class AdditionalDataModel {
       buildingSystem: json['buildingSystem'],
       buildingRatio: json['buildingRatio'],
       accordingTo: json['accordingTo'],
-      totalValue: json['totalValue']?.toDouble(),
-      evaluationIssueDate: json['evaluationIssueDate'] != null
-          ? (json['evaluationIssueDate'] as Timestamp).toDate()
-          : null,
     );
   }
 
@@ -40,10 +32,6 @@ class AdditionalDataModel {
       'buildingSystem': buildingSystem,
       'buildingRatio': buildingRatio,
       'accordingTo': accordingTo,
-      'totalValue': totalValue,
-      'evaluationIssueDate': evaluationIssueDate != null
-          ? Timestamp.fromDate(evaluationIssueDate!)
-          : null,
     };
   }
 }

@@ -13,7 +13,7 @@ enum FormStep {
   sitePlans,           // المخطط ورفع القياس بالموقع
   propertyImages,      // صور وموقع العقار
   additionalData,      // بيانات إضافية
-  buildingLandCost,    // تكلفة المباني والأرض
+  buildingLandCost,    // القيمة بطريقة التكلفة
   economicIncome,      // الدخل الاقتصادي
 }
 
@@ -99,7 +99,7 @@ class FormNavigationNotifier extends _$FormNavigationNotifier {
       case FormStep.additionalData:
         return 'بيانات إضافية';
       case FormStep.buildingLandCost:
-        return 'تكلفة المباني والأرض';
+        return 'القيمة بطريقة التكلفة';
       case FormStep.economicIncome:
         return 'الدخل الاقتصادي';
     }

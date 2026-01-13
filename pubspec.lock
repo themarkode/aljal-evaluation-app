@@ -1082,6 +1082,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
+  tafkeet:
+    dependency: "direct main"
+    description:
+      name: tafkeet
+      sha256: a717647ff370b373e946b41f5019a9515cb9c47e90725c8bbec219a2dd9ff60f
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.3"
   term_glyph:
     dependency: transitive
     description:
