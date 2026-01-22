@@ -12,10 +12,12 @@ import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_temp
 /// Step 5: Area Details Screen
 class Step5AreaDetailsScreen extends ConsumerStatefulWidget {
   final String? evaluationId;
+  final bool isViewOnly;
 
   const Step5AreaDetailsScreen({
     super.key,
     this.evaluationId,
+    this.isViewOnly = false,
   });
 
   @override
@@ -98,6 +100,17 @@ class _Step5AreaDetailsScreenState extends ConsumerState<Step5AreaDetailsScreen>
   }
 
   void _saveAndContinue() {
+    // In view-only mode, just navigate
+    if (widget.isViewOnly) {
+      StepNavigation.goToNextStep(
+        context,
+        currentStep: 5,
+        evaluationId: widget.evaluationId,
+        isViewOnly: true,
+      );
+      return;
+    }
+
     if (_formKey.currentState?.validate() ?? false) {
       // Save to memory state only (no Firebase save)
       saveCurrentDataToState();
@@ -112,6 +125,17 @@ class _Step5AreaDetailsScreenState extends ConsumerState<Step5AreaDetailsScreen>
   }
 
   void _goBack() {
+    // In view-only mode, just navigate
+    if (widget.isViewOnly) {
+      StepNavigation.goToPreviousStep(
+        context,
+        currentStep: 5,
+        evaluationId: widget.evaluationId,
+        isViewOnly: true,
+      );
+      return;
+    }
+
     // Save to memory state only (no Firebase save)
     saveCurrentDataToState();
 
@@ -151,6 +175,7 @@ class _Step5AreaDetailsScreenState extends ConsumerState<Step5AreaDetailsScreen>
       onSaveToMemory: saveCurrentDataToState,
       validateBeforeNavigation: _validateForm,
       onValidationFailed: _onValidationFailed,
+      isViewOnly: widget.isViewOnly,
       mobileContent: _buildMobileLayout(),
       tabletContent: _buildTabletLayout(),
       desktopContent: _buildDesktopLayout(),

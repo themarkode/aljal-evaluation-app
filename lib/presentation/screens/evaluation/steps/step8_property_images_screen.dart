@@ -18,10 +18,12 @@ import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_temp
 /// Step 8: Property Images Screen
 class Step8PropertyImagesScreen extends ConsumerStatefulWidget {
   final String? evaluationId;
+  final bool isViewOnly;
 
   const Step8PropertyImagesScreen({
     super.key,
     this.evaluationId,
+    this.isViewOnly = false,
   });
 
   @override
@@ -305,6 +307,17 @@ class _Step8PropertyImagesScreenState
   }
 
   void _saveAndContinue() {
+    // In view-only mode, just navigate
+    if (widget.isViewOnly) {
+      StepNavigation.goToNextStep(
+        context,
+        currentStep: 8,
+        evaluationId: widget.evaluationId,
+        isViewOnly: true,
+      );
+      return;
+    }
+
     if (_formKey.currentState?.validate() ?? false) {
       // Save to memory state only (no Firebase save)
       saveCurrentDataToState();
@@ -319,6 +332,17 @@ class _Step8PropertyImagesScreenState
   }
 
   void _goBack() {
+    // In view-only mode, just navigate
+    if (widget.isViewOnly) {
+      StepNavigation.goToPreviousStep(
+        context,
+        currentStep: 8,
+        evaluationId: widget.evaluationId,
+        isViewOnly: true,
+      );
+      return;
+    }
+
     // Save to memory state only (no Firebase save)
     saveCurrentDataToState();
 
@@ -357,6 +381,7 @@ class _Step8PropertyImagesScreenState
       onSaveToMemory: saveCurrentDataToState,
       validateBeforeNavigation: _validateForm,
       onValidationFailed: _onValidationFailed,
+      isViewOnly: widget.isViewOnly,
       mobileContent: _buildContent(),
     );
   }

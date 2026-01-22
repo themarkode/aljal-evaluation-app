@@ -41,6 +41,9 @@ class FormStepAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Callback when validation fails (to trigger error pulse animation)
   final VoidCallback? onValidationFailed;
 
+  /// Whether the form is in view-only mode
+  final bool isViewOnly;
+
   const FormStepAppBar({
     super.key,
     required this.currentStep,
@@ -49,6 +52,7 @@ class FormStepAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.onSaveToMemory,
     this.validateBeforeNavigation,
     this.onValidationFailed,
+    this.isViewOnly = false,
   });
 
   @override
@@ -89,6 +93,7 @@ class FormStepAppBar extends StatelessWidget implements PreferredSizeWidget {
         onSaveToMemory: onSaveToMemory,
         validateBeforeNavigation: validateBeforeNavigation,
         onValidationFailed: onValidationFailed,
+        isViewOnly: isViewOnly,
       ),
       // Menu button on LEFT (RTL: actions appears on left visually)
       actions: [

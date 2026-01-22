@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../data/models/evaluation_model.dart';
 
 /// Beautiful modern card widget for displaying evaluation
@@ -12,6 +13,8 @@ class EvaluationCard extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onExport;
   final VoidCallback? onRestore;
+  final VoidCallback? onApprove;
+  final VoidCallback? onUnapprove;
 
   const EvaluationCard({
     super.key,
@@ -21,6 +24,8 @@ class EvaluationCard extends StatelessWidget {
     this.onDelete,
     this.onExport,
     this.onRestore,
+    this.onApprove,
+    this.onUnapprove,
   });
 
   @override
@@ -187,17 +192,22 @@ class EvaluationCard extends StatelessWidget {
       case 'completed':
         badgeColor = AppColors.success;
         badgeIcon = Icons.check_circle_rounded;
-        badgeText = 'مكتمل';
+        badgeText = AppConstants.labelCompleted;
+        break;
+      case 'approved':
+        badgeColor = Colors.black;
+        badgeIcon = Icons.verified_rounded;
+        badgeText = AppConstants.labelApproved;
         break;
       case 'deleted':
         badgeColor = AppColors.error;
         badgeIcon = Icons.cancel_rounded;
-        badgeText = 'محذوف';
+        badgeText = AppConstants.labelDeleted;
         break;
       default: // draft
         badgeColor = AppColors.warning;
         badgeIcon = Icons.pending_rounded;
-        badgeText = 'مسودة';
+        badgeText = AppConstants.labelDraft;
     }
     
     return Container(
@@ -252,6 +262,7 @@ class EvaluationCard extends StatelessWidget {
 
   Widget _buildMoreOptionsButton() {
     final isDeleted = evaluation.status == 'deleted';
+    final isApproved = evaluation.status == 'approved';
     
     return PopupMenuButton<String>(
       onSelected: (value) {
@@ -267,6 +278,12 @@ class EvaluationCard extends StatelessWidget {
             break;
           case 'restore':
             onRestore?.call();
+            break;
+          case 'approve':
+            onApprove?.call();
+            break;
+          case 'unapprove':
+            onUnapprove?.call();
             break;
         }
       },
@@ -311,8 +328,8 @@ class EvaluationCard extends StatelessWidget {
               ],
             ),
           ),
-        // Edit option (not for deleted items)
-        if (!isDeleted)
+        // Edit option (not for deleted or approved items)
+        if (!isDeleted && !isApproved)
           PopupMenuItem<String>(
             value: 'edit',
             child: Row(
@@ -333,7 +350,7 @@ class EvaluationCard extends StatelessWidget {
               ],
             ),
           ),
-        // Export option
+        // Export option (always available)
         PopupMenuItem<String>(
           value: 'export',
           child: Row(
@@ -354,27 +371,54 @@ class EvaluationCard extends StatelessWidget {
             ],
           ),
         ),
-        // Delete option - different text for deleted items
-        PopupMenuItem<String>(
-          value: 'delete',
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isDeleted ? Icons.delete_forever_rounded : Icons.delete_rounded,
-                size: 18,
-                color: AppColors.error,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                isDeleted ? 'حذف نهائي' : 'حذف',
-                style: AppTypography.bodyMedium.copyWith(
+        // Approve/Unapprove option (not for deleted items)
+        if (!isDeleted)
+          PopupMenuItem<String>(
+            value: isApproved ? 'unapprove' : 'approve',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isApproved 
+                      ? Icons.lock_open_rounded 
+                      : Icons.verified_rounded,
+                  size: 18,
+                  color: isApproved ? AppColors.warning : Colors.black,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  isApproved 
+                      ? AppConstants.menuUnapprove 
+                      : AppConstants.menuApprove,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: isApproved ? AppColors.warning : Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        // Delete option (not for approved items)
+        if (!isApproved)
+          PopupMenuItem<String>(
+            value: 'delete',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isDeleted ? Icons.delete_forever_rounded : Icons.delete_rounded,
+                  size: 18,
                   color: AppColors.error,
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Text(
+                  isDeleted ? 'حذف نهائي' : 'حذف',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.error,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }

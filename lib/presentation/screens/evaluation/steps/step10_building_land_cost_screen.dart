@@ -16,10 +16,12 @@ import 'package:intl/intl.dart' hide TextDirection;
 /// Step 10: Building and Land Cost Screen - القيمة بطريقة التكلفة
 class Step10BuildingLandCostScreen extends ConsumerStatefulWidget {
   final String? evaluationId;
+  final bool isViewOnly;
 
   const Step10BuildingLandCostScreen({
     super.key,
     this.evaluationId,
+    this.isViewOnly = false,
   });
 
   @override
@@ -215,6 +217,17 @@ class _Step10BuildingLandCostScreenState
   }
 
   void _saveAndContinue() {
+    // In view-only mode, just navigate
+    if (widget.isViewOnly) {
+      StepNavigation.goToNextStep(
+        context,
+        currentStep: 10,
+        evaluationId: widget.evaluationId,
+        isViewOnly: true,
+      );
+      return;
+    }
+
     if (_formKey.currentState?.validate() ?? false) {
       saveCurrentDataToState();
       StepNavigation.goToNextStep(
@@ -226,6 +239,17 @@ class _Step10BuildingLandCostScreenState
   }
 
   void _goBack() {
+    // In view-only mode, just navigate
+    if (widget.isViewOnly) {
+      StepNavigation.goToPreviousStep(
+        context,
+        currentStep: 10,
+        evaluationId: widget.evaluationId,
+        isViewOnly: true,
+      );
+      return;
+    }
+
     saveCurrentDataToState();
     StepNavigation.goToPreviousStep(
       context,
@@ -271,6 +295,7 @@ class _Step10BuildingLandCostScreenState
       onSaveToMemory: saveCurrentDataToState,
       validateBeforeNavigation: _validateForm,
       onValidationFailed: _onValidationFailed,
+      isViewOnly: widget.isViewOnly,
       mobileContent: _buildContent(),
     );
   }

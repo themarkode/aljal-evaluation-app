@@ -7,7 +7,7 @@ part of 'form_navigation_provider.dart';
 // **************************************************************************
 
 String _$formNavigationNotifierHash() =>
-    r'471b2af2ec3f94e3c48e3cf9fcf594bb281a823a';
+    r'7d59130f799b0ee419aa55fee7d0cdce2efcafa3';
 
 /// See also [FormNavigationNotifier].
 @ProviderFor(FormNavigationNotifier)

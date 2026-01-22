@@ -25,6 +25,7 @@ class FormNavigationButtons extends StatelessWidget {
   final bool isLoading;
   final String? nextText; // Override for custom text (e.g., "حفظ النموذج")
   final String? previousText; // Override for custom text (e.g., "إلغاء")
+  final bool isViewOnly; // When true, show "Back to List" on last step instead of "Save"
 
   const FormNavigationButtons({
     super.key,
@@ -34,17 +35,20 @@ class FormNavigationButtons extends StatelessWidget {
     this.isLoading = false,
     this.nextText,
     this.previousText,
+    this.isViewOnly = false,
   });
 
   String get _nextButtonText {
     if (nextText != null) return nextText!;
-    if (currentStep >= 11) return 'حفظ النموذج';
+    if (currentStep >= 11) {
+      return isViewOnly ? 'العودة للقائمة' : 'حفظ النموذج';
+    }
     return stepNames[currentStep + 1] ?? 'التالي';
   }
 
   String get _previousButtonText {
     if (previousText != null) return previousText!;
-    if (currentStep <= 1) return 'إلغاء';
+    if (currentStep <= 1) return isViewOnly ? 'العودة للقائمة' : 'إلغاء';
     return stepNames[currentStep - 1] ?? 'السابق';
   }
 

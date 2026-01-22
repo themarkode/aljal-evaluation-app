@@ -15,10 +15,12 @@ import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_temp
 /// Step 4: Floors Screen
 class Step4FloorsScreen extends ConsumerStatefulWidget {
   final String? evaluationId;
+  final bool isViewOnly;
 
   const Step4FloorsScreen({
     super.key,
     this.evaluationId,
+    this.isViewOnly = false,
   });
 
   @override
@@ -112,6 +114,17 @@ class _Step4FloorsScreenState extends ConsumerState<Step4FloorsScreen>
   }
 
   void _saveAndContinue() {
+    // In view-only mode, just navigate
+    if (widget.isViewOnly) {
+      StepNavigation.goToNextStep(
+        context,
+        currentStep: 4,
+        evaluationId: widget.evaluationId,
+        isViewOnly: true,
+      );
+      return;
+    }
+
     if (_formKey.currentState?.validate() ?? false) {
       // Save to memory state only (no Firebase save)
       saveCurrentDataToState();
@@ -126,6 +139,17 @@ class _Step4FloorsScreenState extends ConsumerState<Step4FloorsScreen>
   }
 
   void _goBack() {
+    // In view-only mode, just navigate
+    if (widget.isViewOnly) {
+      StepNavigation.goToPreviousStep(
+        context,
+        currentStep: 4,
+        evaluationId: widget.evaluationId,
+        isViewOnly: true,
+      );
+      return;
+    }
+
     // Save to memory state only (no Firebase save)
     saveCurrentDataToState();
 
@@ -160,6 +184,7 @@ class _Step4FloorsScreenState extends ConsumerState<Step4FloorsScreen>
       onSaveToMemory: saveCurrentDataToState,
       validateBeforeNavigation: _validateForm,
       onValidationFailed: _onValidationFailed,
+      isViewOnly: widget.isViewOnly,
       mobileContent: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

@@ -88,22 +88,24 @@ class _ViewEvaluationScreenState extends ConsumerState<ViewEvaluationScreen> {
               ),
             ],
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.edit, color: AppColors.primary),
-              onPressed: () {
-                // Navigate to edit mode
-                Navigator.pushReplacementNamed(
-                  context,
-                  RouteNames.editEvaluation,
-                  arguments: EvaluationArguments(
-                    evaluationId: widget.evaluationId,
+          actions: evaluation.status != 'approved'
+              ? [
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: AppColors.primary),
+                    onPressed: () {
+                      // Navigate to edit mode
+                      Navigator.pushReplacementNamed(
+                        context,
+                        RouteNames.editEvaluation,
+                        arguments: EvaluationArguments(
+                          evaluationId: widget.evaluationId,
+                        ),
+                      );
+                    },
+                    tooltip: 'تعديل',
                   ),
-                );
-              },
-              tooltip: 'تعديل',
-            ),
-          ],
+                ]
+              : null,
         ),
         body: SafeArea(
           child: evaluation.generalInfo == null
@@ -271,7 +273,8 @@ class _ViewEvaluationScreenState extends ConsumerState<ViewEvaluationScreen> {
         AppSpacing.verticalSpaceSM,
         _buildInfoRow('الخدمات والمرافق العامة', desc?.publicServices),
         AppSpacing.verticalSpaceSM,
-        _buildInfoRow('أنواع العقارات المجاورة', desc?.neighboringPropertyTypes),
+        _buildInfoRow(
+            'أنواع العقارات المجاورة', desc?.neighboringPropertyTypes),
         AppSpacing.verticalSpaceSM,
         _buildInfoRow('نسبة البناء', desc?.buildingRatio?.toString()),
         AppSpacing.verticalSpaceSM,
@@ -292,7 +295,7 @@ class _ViewEvaluationScreenState extends ConsumerState<ViewEvaluationScreen> {
     }
 
     return Column(
-      children: evaluation.floors!.asMap().entries.map((entry) {
+      children: evaluation.floors!.asMap().entries.map<Widget>((entry) {
         final index = entry.key;
         final floor = entry.value;
         return Container(
@@ -373,21 +376,51 @@ class _ViewEvaluationScreenState extends ConsumerState<ViewEvaluationScreen> {
 
   Widget _buildPropertyImagesSection(evaluation) {
     final images = evaluation.propertyImages;
-    // TODO: Display images in a grid when image URLs are available
+
+    // Check if any image URL exists
+    final hasImages = images != null &&
+        (images.propertyLocationMapImageUrl != null ||
+            images.propertyImageUrl != null ||
+            images.propertyVariousImages1Url != null ||
+            images.propertyVariousImages2Url != null ||
+            images.satelliteLocationImageUrl != null ||
+            images.civilPlotMapImageUrl != null);
+
+    if (!hasImages) {
+      return const EmptyState(
+        icon: Icons.image_outlined,
+        title: 'لا توجد صور',
+        subtitle: 'لم يتم إضافة أي صور',
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (images?.images != null && images!.images!.isNotEmpty)
-          Text(
-            'عدد الصور: ${images.images!.length}',
-            style: AppTypography.bodyMedium,
-          )
-        else
-          const EmptyState(
-            icon: Icons.image_outlined,
-            title: 'لا توجد صور',
-            subtitle: 'لم يتم إضافة أي صور',
-          ),
+        _buildInfoRow(
+            'صور موقع العقار',
+            images.propertyLocationMapImageUrl != null
+                ? 'متوفرة'
+                : 'غير متوفرة'),
+        AppSpacing.verticalSpaceSM,
+        _buildInfoRow('صورة العقار',
+            images.propertyImageUrl != null ? 'متوفرة' : 'غير متوفرة'),
+        AppSpacing.verticalSpaceSM,
+        _buildInfoRow('صور مختلفة 1',
+            images.propertyVariousImages1Url != null ? 'متوفرة' : 'غير متوفرة'),
+        AppSpacing.verticalSpaceSM,
+        _buildInfoRow('صور مختلفة 2',
+            images.propertyVariousImages2Url != null ? 'متوفرة' : 'غير متوفرة'),
+        AppSpacing.verticalSpaceSM,
+        _buildInfoRow('صورة القمر الصناعي',
+            images.satelliteLocationImageUrl != null ? 'متوفرة' : 'غير متوفرة'),
+        AppSpacing.verticalSpaceSM,
+        _buildInfoRow('صورة القطعة المدنية',
+            images.civilPlotMapImageUrl != null ? 'متوفرة' : 'غير متوفرة'),
+        AppSpacing.verticalSpaceSM,
+        _buildInfoRow('عنوان الموقع', images.locationAddressText),
+        AppSpacing.verticalSpaceSM,
+        _buildInfoRow('رابط الموقع', images.locationAddressLink),
       ],
     );
   }

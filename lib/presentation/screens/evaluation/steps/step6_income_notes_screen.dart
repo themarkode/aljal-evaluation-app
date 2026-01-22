@@ -14,10 +14,12 @@ import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_temp
 /// Step 6: Income Notes Screen
 class Step6IncomeNotesScreen extends ConsumerStatefulWidget {
   final String? evaluationId;
+  final bool isViewOnly;
 
   const Step6IncomeNotesScreen({
     super.key,
     this.evaluationId,
+    this.isViewOnly = false,
   });
 
   @override
@@ -115,6 +117,17 @@ class _Step6IncomeNotesScreenState extends ConsumerState<Step6IncomeNotesScreen>
   }
 
   void _saveAndContinue() {
+    // In view-only mode, just navigate
+    if (widget.isViewOnly) {
+      StepNavigation.goToNextStep(
+        context,
+        currentStep: 6,
+        evaluationId: widget.evaluationId,
+        isViewOnly: true,
+      );
+      return;
+    }
+
     if (_formKey.currentState?.validate() ?? false) {
       // Save to memory state only (no Firebase save)
       saveCurrentDataToState();
@@ -129,6 +142,17 @@ class _Step6IncomeNotesScreenState extends ConsumerState<Step6IncomeNotesScreen>
   }
 
   void _goBack() {
+    // In view-only mode, just navigate
+    if (widget.isViewOnly) {
+      StepNavigation.goToPreviousStep(
+        context,
+        currentStep: 6,
+        evaluationId: widget.evaluationId,
+        isViewOnly: true,
+      );
+      return;
+    }
+
     // Save to memory state only (no Firebase save)
     saveCurrentDataToState();
 
@@ -168,6 +192,7 @@ class _Step6IncomeNotesScreenState extends ConsumerState<Step6IncomeNotesScreen>
       onSaveToMemory: saveCurrentDataToState,
       validateBeforeNavigation: _validateForm,
       onValidationFailed: _onValidationFailed,
+      isViewOnly: widget.isViewOnly,
       mobileContent: _buildMobileLayout(),
       tabletContent: _buildTabletLayout(),
       desktopContent: _buildDesktopLayout(),

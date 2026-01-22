@@ -77,6 +77,9 @@ class StepScreenTemplate extends StatelessWidget {
   /// Callback when validation fails (to trigger error pulse animation)
   final VoidCallback? onValidationFailed;
 
+  /// Whether the form is in view-only mode (fields disabled, no saving)
+  final bool isViewOnly;
+
   const StepScreenTemplate({
     super.key,
     required this.currentStep,
@@ -93,6 +96,7 @@ class StepScreenTemplate extends StatelessWidget {
     this.showNavigationButtons = true,
     this.validateBeforeNavigation,
     this.onValidationFailed,
+    this.isViewOnly = false,
   });
 
   @override
@@ -109,6 +113,7 @@ class StepScreenTemplate extends StatelessWidget {
           onSaveToMemory: onSaveToMemory,
           validateBeforeNavigation: validateBeforeNavigation,
           onValidationFailed: onValidationFailed,
+          isViewOnly: isViewOnly,
         ),
         body: SafeArea(
           child: Form(
@@ -119,17 +124,20 @@ class StepScreenTemplate extends StatelessWidget {
                 Expanded(
                   child: SingleChildScrollView(
                     padding: AppSpacing.screenPaddingMobileInsets,
-                    child: ResponsiveBuilder(
-                      builder: (context, deviceType) {
-                        switch (deviceType) {
-                          case DeviceType.mobile:
-                            return mobileContent;
-                          case DeviceType.tablet:
-                            return tabletContent ?? mobileContent;
-                          case DeviceType.desktop:
-                            return desktopContent ?? tabletContent ?? mobileContent;
-                        }
-                      },
+                    child: IgnorePointer(
+                      ignoring: isViewOnly,
+                      child: ResponsiveBuilder(
+                        builder: (context, deviceType) {
+                          switch (deviceType) {
+                            case DeviceType.mobile:
+                              return mobileContent;
+                            case DeviceType.tablet:
+                              return tabletContent ?? mobileContent;
+                            case DeviceType.desktop:
+                              return desktopContent ?? tabletContent ?? mobileContent;
+                          }
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -140,6 +148,7 @@ class StepScreenTemplate extends StatelessWidget {
                         currentStep: currentStep,
                         onNext: onNext,
                         onPrevious: onPrevious,
+                        isViewOnly: isViewOnly,
                       ),
               ],
             ),

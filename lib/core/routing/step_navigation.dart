@@ -75,11 +75,13 @@ class StepNavigation {
     int step, {
     String? evaluationId,
     bool replace = true,
+    bool isViewOnly = false,
   }) {
     final routeName = getRouteForStep(step);
     final arguments = FormStepArguments.forStep(
       step: step,
       evaluationId: evaluationId,
+      isViewOnly: isViewOnly,
     );
 
     if (replace) {
@@ -102,9 +104,10 @@ class StepNavigation {
     BuildContext context, {
     required int currentStep,
     String? evaluationId,
+    bool isViewOnly = false,
   }) {
     if (currentStep < totalSteps) {
-      goToStep(context, currentStep + 1, evaluationId: evaluationId);
+      goToStep(context, currentStep + 1, evaluationId: evaluationId, isViewOnly: isViewOnly);
     }
   }
 
@@ -113,9 +116,10 @@ class StepNavigation {
     BuildContext context, {
     required int currentStep,
     String? evaluationId,
+    bool isViewOnly = false,
   }) {
     if (currentStep > 1) {
-      goToStep(context, currentStep - 1, evaluationId: evaluationId);
+      goToStep(context, currentStep - 1, evaluationId: evaluationId, isViewOnly: isViewOnly);
     }
   }
 

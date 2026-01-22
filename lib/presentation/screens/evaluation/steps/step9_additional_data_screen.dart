@@ -12,10 +12,12 @@ import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_temp
 /// Step 9: Additional Data Screen
 class Step9AdditionalDataScreen extends ConsumerStatefulWidget {
   final String? evaluationId;
+  final bool isViewOnly;
 
   const Step9AdditionalDataScreen({
     super.key,
     this.evaluationId,
+    this.isViewOnly = false,
   });
 
   @override
@@ -84,6 +86,17 @@ class _Step9AdditionalDataScreenState
   }
 
   void _saveAndContinue() {
+    // In view-only mode, just navigate
+    if (widget.isViewOnly) {
+      StepNavigation.goToNextStep(
+        context,
+        currentStep: 9,
+        evaluationId: widget.evaluationId,
+        isViewOnly: true,
+      );
+      return;
+    }
+
     if (_formKey.currentState?.validate() ?? false) {
       // Save to memory state only (no Firebase save)
       saveCurrentDataToState();
@@ -98,13 +111,24 @@ class _Step9AdditionalDataScreenState
   }
 
   void _goBack() {
+    // In view-only mode, just navigate
+    if (widget.isViewOnly) {
+      StepNavigation.goToPreviousStep(
+        context,
+        currentStep: 9,
+        evaluationId: widget.evaluationId,
+        isViewOnly: true,
+      );
+      return;
+    }
+
     // Save to memory state only (no Firebase save)
     saveCurrentDataToState();
 
     StepNavigation.goToPreviousStep(
       context,
       currentStep: 9,
-        evaluationId: widget.evaluationId,
+      evaluationId: widget.evaluationId,
     );
   }
 
@@ -126,12 +150,13 @@ class _Step9AdditionalDataScreenState
       currentStep: 9,
       evaluationId: widget.evaluationId,
       formKey: _formKey,
-                    onNext: _saveAndContinue,
-                    onPrevious: _goBack,
+      onNext: _saveAndContinue,
+      onPrevious: _goBack,
       onLogoTap: showExitConfirmationDialog,
       onSaveToMemory: saveCurrentDataToState,
       validateBeforeNavigation: _validateForm,
       onValidationFailed: _onValidationFailed,
+      isViewOnly: widget.isViewOnly,
       mobileContent: _buildMobileLayout(),
       tabletContent: _buildTabletLayout(),
       desktopContent: _buildDesktopLayout(),

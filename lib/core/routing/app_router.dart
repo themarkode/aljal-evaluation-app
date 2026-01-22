@@ -184,51 +184,52 @@ class AppRouter {
     required Object? arguments,
     required RouteSettings settings,
   }) {
-    // Extract evaluation ID from arguments
+    // Extract evaluation ID and view-only mode from arguments
     final formArgs = arguments is FormStepArguments
         ? arguments
         : FormStepArguments.forStep(step: step);
 
     final evaluationId = formArgs.evaluationId;
+    final isViewOnly = formArgs.isViewOnly;
 
     // Return appropriate step screen
     Widget screen;
     switch (step) {
       case 1:
-        screen = Step1GeneralInfoScreen(evaluationId: evaluationId);
+        screen = Step1GeneralInfoScreen(evaluationId: evaluationId, isViewOnly: isViewOnly);
         break;
       case 2:
-        screen = Step2GeneralPropertyInfoScreen(evaluationId: evaluationId);
+        screen = Step2GeneralPropertyInfoScreen(evaluationId: evaluationId, isViewOnly: isViewOnly);
         break;
       case 3:
-        screen = Step3PropertyDescriptionScreen(evaluationId: evaluationId);
+        screen = Step3PropertyDescriptionScreen(evaluationId: evaluationId, isViewOnly: isViewOnly);
         break;
       case 4:
-        screen = Step4FloorsScreen(evaluationId: evaluationId);
+        screen = Step4FloorsScreen(evaluationId: evaluationId, isViewOnly: isViewOnly);
         break;
       case 5:
-        screen = Step5AreaDetailsScreen(evaluationId: evaluationId);
+        screen = Step5AreaDetailsScreen(evaluationId: evaluationId, isViewOnly: isViewOnly);
         break;
       case 6:
-        screen = Step6IncomeNotesScreen(evaluationId: evaluationId);
+        screen = Step6IncomeNotesScreen(evaluationId: evaluationId, isViewOnly: isViewOnly);
         break;
       case 7:
-        screen = Step7SitePlansScreen(evaluationId: evaluationId);
+        screen = Step7SitePlansScreen(evaluationId: evaluationId, isViewOnly: isViewOnly);
         break;
       case 8:
-        screen = Step8PropertyImagesScreen(evaluationId: evaluationId);
+        screen = Step8PropertyImagesScreen(evaluationId: evaluationId, isViewOnly: isViewOnly);
         break;
       case 9:
-        screen = Step9AdditionalDataScreen(evaluationId: evaluationId);
+        screen = Step9AdditionalDataScreen(evaluationId: evaluationId, isViewOnly: isViewOnly);
         break;
       case 10:
-        screen = Step10BuildingLandCostScreen(evaluationId: evaluationId);
+        screen = Step10BuildingLandCostScreen(evaluationId: evaluationId, isViewOnly: isViewOnly);
         break;
       case 11:
-        screen = Step11EconomicIncomeScreen(evaluationId: evaluationId);
+        screen = Step11EconomicIncomeScreen(evaluationId: evaluationId, isViewOnly: isViewOnly);
         break;
       default:
-        screen = Step1GeneralInfoScreen(evaluationId: evaluationId);
+        screen = Step1GeneralInfoScreen(evaluationId: evaluationId, isViewOnly: isViewOnly);
     }
 
     return _buildRoute(screen, settings: settings);

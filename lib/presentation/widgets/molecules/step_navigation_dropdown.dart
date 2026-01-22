@@ -42,6 +42,8 @@ class StepNavigationDropdown extends StatelessWidget {
   final bool Function()? validateBeforeNavigation;
   /// Callback when validation fails (to trigger error pulse animation)
   final VoidCallback? onValidationFailed;
+  /// Whether the form is in view-only mode
+  final bool isViewOnly;
 
   const StepNavigationDropdown({
     super.key,
@@ -50,6 +52,7 @@ class StepNavigationDropdown extends StatelessWidget {
     this.onSaveToMemory,
     this.validateBeforeNavigation,
     this.onValidationFailed,
+    this.isViewOnly = false,
   });
 
   void _navigateToStep(BuildContext context, StepInfo step) {
@@ -57,19 +60,22 @@ class StepNavigationDropdown extends StatelessWidget {
       return;
     }
 
-    // Validate before navigation if validator is provided
-    if (validateBeforeNavigation != null) {
-      final isValid = validateBeforeNavigation!();
-      if (!isValid) {
-        // Trigger error pulse animation
-        onValidationFailed?.call();
-        return; // Block navigation
+    // In view-only mode, skip validation and saving
+    if (!isViewOnly) {
+      // Validate before navigation if validator is provided
+      if (validateBeforeNavigation != null) {
+        final isValid = validateBeforeNavigation!();
+        if (!isValid) {
+          // Trigger error pulse animation
+          onValidationFailed?.call();
+          return; // Block navigation
+        }
       }
-    }
 
-    // Save current data to memory (NOT to Firebase) before navigating
-    if (onSaveToMemory != null) {
-      onSaveToMemory!();
+      // Save current data to memory (NOT to Firebase) before navigating
+      if (onSaveToMemory != null) {
+        onSaveToMemory!();
+      }
     }
 
     Navigator.pushReplacementNamed(
@@ -78,6 +84,7 @@ class StepNavigationDropdown extends StatelessWidget {
       arguments: FormStepArguments.forStep(
         step: step.stepNumber,
         evaluationId: evaluationId,
+        isViewOnly: isViewOnly,
       ),
     );
   }

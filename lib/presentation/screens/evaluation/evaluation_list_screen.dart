@@ -9,18 +9,20 @@ import 'package:aljal_evaluation/core/theme/app_spacing.dart';
 import 'package:aljal_evaluation/core/routing/route_names.dart';
 import 'package:aljal_evaluation/core/routing/route_arguments.dart';
 import 'package:aljal_evaluation/core/utils/ui_helpers.dart';
+import 'package:aljal_evaluation/core/constants/app_constants.dart';
 import 'package:aljal_evaluation/presentation/providers/evaluation_list_provider.dart';
 import 'package:aljal_evaluation/presentation/providers/evaluation_provider.dart';
 import 'package:aljal_evaluation/presentation/widgets/organisms/evaluation_list.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/loading_indicator.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/empty_state.dart';
 import 'package:aljal_evaluation/presentation/widgets/atoms/custom_button.dart';
+import 'package:aljal_evaluation/presentation/widgets/molecules/approval_password_dialog.dart';
 import 'package:aljal_evaluation/data/models/evaluation_model.dart';
 import 'package:aljal_evaluation/data/services/word_generation_service.dart';
 import 'package:aljal_evaluation/presentation/widgets/organisms/app_drawer.dart';
 
 /// Status filter for evaluations
-enum StatusFilter { all, completed, draft, deleted }
+enum StatusFilter { all, completed, draft, approved, deleted }
 
 /// Main evaluation list screen - the home screen of the app
 /// Displays all evaluations with search, filter, and actions
@@ -154,12 +156,14 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
   }
 
   void _onEditEvaluation(EvaluationModel evaluation) {
+    // If evaluation is approved, open in view-only mode (same form but fields disabled)
     Navigator.pushNamed(
       context,
       RouteNames.formStep1,
       arguments: FormStepArguments.forStep(
         step: 1,
         evaluationId: evaluation.evaluationId,
+        isViewOnly: evaluation.status == 'approved',
       ),
     );
   }
@@ -304,6 +308,60 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
     } catch (e) {
       if (mounted) {
         UIHelpers.showErrorSnackBar(context, 'فشل استعادة التقرير: $e');
+      }
+    }
+  }
+
+  /// Approve an evaluation - requires password
+  Future<void> _onApproveEvaluation(EvaluationModel evaluation) async {
+    final confirmed = await ApprovalPasswordDialog.show(
+      context,
+      title: AppConstants.approveDialogTitle,
+      message: AppConstants.approveDialogMessage,
+      confirmButtonText: AppConstants.menuApprove,
+      correctPassword: AppConstants.approvalPassword,
+    );
+
+    if (confirmed) {
+      try {
+        await ref
+            .read(evaluationListNotifierProvider.notifier)
+            .approveEvaluation(evaluation.evaluationId!);
+
+        if (mounted) {
+          UIHelpers.showSuccessSnackBar(context, 'تم اعتماد التقرير بنجاح');
+        }
+      } catch (e) {
+        if (mounted) {
+          UIHelpers.showErrorSnackBar(context, 'فشل اعتماد التقرير: $e');
+        }
+      }
+    }
+  }
+
+  /// Unapprove an evaluation - requires password
+  Future<void> _onUnapproveEvaluation(EvaluationModel evaluation) async {
+    final confirmed = await ApprovalPasswordDialog.show(
+      context,
+      title: AppConstants.unapproveDialogTitle,
+      message: AppConstants.unapproveDialogMessage,
+      confirmButtonText: AppConstants.menuUnapprove,
+      correctPassword: AppConstants.unapprovalPassword,
+    );
+
+    if (confirmed) {
+      try {
+        await ref
+            .read(evaluationListNotifierProvider.notifier)
+            .unapproveEvaluation(evaluation.evaluationId!);
+
+        if (mounted) {
+          UIHelpers.showSuccessSnackBar(context, 'تم إلغاء اعتماد التقرير بنجاح');
+        }
+      } catch (e) {
+        if (mounted) {
+          UIHelpers.showErrorSnackBar(context, 'فشل إلغاء اعتماد التقرير: $e');
+        }
       }
     }
   }
@@ -642,6 +700,9 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
         filtered = evaluations
             .where((e) => e.status == 'draft' || e.status == null)
             .toList();
+        break;
+      case StatusFilter.approved:
+        filtered = evaluations.where((e) => e.status == 'approved').toList();
         break;
       case StatusFilter.deleted:
         filtered = evaluations.where((e) => e.status == 'deleted').toList();
@@ -1015,31 +1076,40 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
             child: _buildDateFilterChip(),
           ),
         // Status chips
-        Row(
-          children: [
-            _buildStatusChip(
-              label: 'الكل',
-              filter: StatusFilter.all,
-            ),
-            const SizedBox(width: 8),
-            _buildStatusChip(
-              label: 'مكتملة',
-              filter: StatusFilter.completed,
-              color: AppColors.success,
-            ),
-            const SizedBox(width: 8),
-            _buildStatusChip(
-              label: 'مسودة',
-              filter: StatusFilter.draft,
-              color: AppColors.warning,
-            ),
-            const SizedBox(width: 8),
-            _buildStatusChip(
-              label: 'محذوفة',
-              filter: StatusFilter.deleted,
-              color: AppColors.error,
-            ),
-          ],
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildStatusChip(
+                label: 'الكل',
+                filter: StatusFilter.all,
+              ),
+              const SizedBox(width: 8),
+              _buildStatusChip(
+                label: 'مكتملة',
+                filter: StatusFilter.completed,
+                color: AppColors.success,
+              ),
+              const SizedBox(width: 8),
+              _buildStatusChip(
+                label: 'معتمدة',
+                filter: StatusFilter.approved,
+                color: Colors.black,
+              ),
+              const SizedBox(width: 8),
+              _buildStatusChip(
+                label: 'مسودة',
+                filter: StatusFilter.draft,
+                color: AppColors.warning,
+              ),
+              const SizedBox(width: 8),
+              _buildStatusChip(
+                label: 'محذوفة',
+                filter: StatusFilter.deleted,
+                color: AppColors.error,
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -1105,31 +1175,30 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
   }) {
     final isActive = _statusFilter == filter;
 
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _statusFilter = filter),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: 36,
-          decoration: BoxDecoration(
-            color: isActive
-                ? (color ?? AppColors.primary).withOpacity(0.15)
-                : AppColors.background,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isActive ? (color ?? AppColors.primary) : AppColors.border,
-              width: isActive ? 1.5 : 1,
-            ),
+    return GestureDetector(
+      onTap: () => setState(() => _statusFilter = filter),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: isActive
+              ? (color ?? AppColors.primary).withOpacity(0.15)
+              : AppColors.background,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isActive ? (color ?? AppColors.primary) : AppColors.border,
+            width: isActive ? 1.5 : 1,
           ),
-          child: Center(
-            child: Text(
-              label,
-              style: AppTypography.labelSmall.copyWith(
-                color: isActive
-                    ? (color ?? AppColors.primary)
-                    : AppColors.textSecondary,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-              ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: AppTypography.labelSmall.copyWith(
+              color: isActive
+                  ? (color ?? AppColors.primary)
+                  : AppColors.textSecondary,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
             ),
           ),
         ),
@@ -1376,6 +1445,8 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
       onDelete: _onDeleteEvaluation,
       onExport: _onExportEvaluation,
       onRestore: _onRestoreEvaluation,
+      onApprove: _onApproveEvaluation,
+      onUnapprove: _onUnapproveEvaluation,
       onRefresh: _onRefresh,
       scrollController: _scrollController,
     );
@@ -1387,6 +1458,8 @@ class _EvaluationListScreenState extends ConsumerState<EvaluationListScreen>
         return 'مكتملة';
       case StatusFilter.draft:
         return 'مسودة';
+      case StatusFilter.approved:
+        return 'معتمدة';
       case StatusFilter.deleted:
         return 'محذوفة';
       case StatusFilter.all:

@@ -212,6 +212,38 @@ class EvaluationService {
     }
   }
 
+  /// Approve evaluation - marks it as 'approved' status
+  /// Approved evaluations cannot be edited or deleted until unapproved
+  Future<void> approveEvaluation(String evaluationId) async {
+    try {
+      // First get the current status to save as previousStatus
+      final doc = await _collection.doc(evaluationId).get();
+      final currentStatus = doc.data()?['status'] ?? 'draft';
+      
+      await _collection.doc(evaluationId).update({
+        'previousStatus': currentStatus,
+        'status': 'approved',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to approve evaluation: $e');
+    }
+  }
+
+  /// Unapprove evaluation - restores it to 'completed' status
+  /// This allows the evaluation to be edited or deleted again
+  Future<void> unapproveEvaluation(String evaluationId) async {
+    try {
+      await _collection.doc(evaluationId).update({
+        'status': 'completed', // Always restore to completed
+        'previousStatus': null, // Clear previousStatus
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to unapprove evaluation: $e');
+    }
+  }
+
   // Get evaluations count
   Future<int> getEvaluationsCount() async {
     try {

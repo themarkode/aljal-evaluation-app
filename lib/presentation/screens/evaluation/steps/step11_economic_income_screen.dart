@@ -16,10 +16,12 @@ import 'package:intl/intl.dart' hide TextDirection;
 /// Step 11: Economic Income Screen - الدخل الاقتصادي (FINAL STEP)
 class Step11EconomicIncomeScreen extends ConsumerStatefulWidget {
   final String? evaluationId;
+  final bool isViewOnly;
 
   const Step11EconomicIncomeScreen({
     super.key,
     this.evaluationId,
+    this.isViewOnly = false,
   });
 
   @override
@@ -179,6 +181,12 @@ class _Step11EconomicIncomeScreenState
   }
 
   Future<void> _saveAndComplete() async {
+    // In view-only mode, just go back to list
+    if (widget.isViewOnly) {
+      StepNavigation.goToEvaluationList(context);
+      return;
+    }
+
     if (_formKey.currentState?.validate() ?? false) {
       try {
         // Show loading indicator
@@ -241,6 +249,17 @@ class _Step11EconomicIncomeScreenState
   }
 
   void _goBack() {
+    // In view-only mode, just navigate
+    if (widget.isViewOnly) {
+      StepNavigation.goToPreviousStep(
+        context,
+        currentStep: 11,
+        evaluationId: widget.evaluationId,
+        isViewOnly: true,
+      );
+      return;
+    }
+
     saveCurrentDataToState();
     StepNavigation.goToPreviousStep(
       context,
@@ -283,6 +302,7 @@ class _Step11EconomicIncomeScreenState
       onSaveToMemory: saveCurrentDataToState,
       validateBeforeNavigation: _validateForm,
       onValidationFailed: _onValidationFailed,
+      isViewOnly: widget.isViewOnly,
       mobileContent: _buildContent(),
     );
   }

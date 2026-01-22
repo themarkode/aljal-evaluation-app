@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:aljal_evaluation/core/theme/app_colors.dart';
 import 'package:aljal_evaluation/core/theme/app_spacing.dart';
 import 'package:aljal_evaluation/core/theme/app_typography.dart';
+import 'package:aljal_evaluation/core/constants/app_constants.dart';
 import 'package:aljal_evaluation/data/models/evaluation_model.dart';
 import 'package:aljal_evaluation/presentation/shared/responsive/responsive_builder.dart';
 import '../molecules/evaluation_card.dart';
@@ -19,6 +20,8 @@ class EvaluationList extends StatelessWidget {
   final void Function(EvaluationModel)? onDelete;
   final void Function(EvaluationModel)? onExport;
   final void Function(EvaluationModel)? onRestore;
+  final void Function(EvaluationModel)? onApprove;
+  final void Function(EvaluationModel)? onUnapprove;
   final VoidCallback? onLoadMore;
   final Future<void> Function()? onRefresh;
   final bool hasMore;
@@ -34,6 +37,8 @@ class EvaluationList extends StatelessWidget {
     this.onDelete,
     this.onExport,
     this.onRestore,
+    this.onApprove,
+    this.onUnapprove,
     this.onLoadMore,
     this.onRefresh,
     this.hasMore = false,
@@ -104,6 +109,8 @@ class EvaluationList extends StatelessWidget {
           onDelete: () => onDelete?.call(evaluation),
           onExport: () => onExport?.call(evaluation),
           onRestore: () => onRestore?.call(evaluation),
+          onApprove: () => onApprove?.call(evaluation),
+          onUnapprove: () => onUnapprove?.call(evaluation),
         );
       },
     );
@@ -138,11 +145,14 @@ class EvaluationList extends StatelessWidget {
         final tableWidth = constraints.maxWidth > _tableMinWidth 
             ? constraints.maxWidth 
             : _tableMinWidth;
+        // IMPORTANT: Get the height constraint to avoid layout issues
+        final tableHeight = constraints.maxHeight;
 
         final tableContent = SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: SizedBox(
             width: tableWidth,
+            height: tableHeight, // Must have height constraint for Expanded to work
             child: Column(
               children: [
                 // Table Header
@@ -343,6 +353,7 @@ class EvaluationList extends StatelessWidget {
 
   Widget _buildOptionsMenu(EvaluationModel evaluation) {
     final isDeleted = evaluation.status == 'deleted';
+    final isApproved = evaluation.status == 'approved';
     
     return PopupMenuButton<String>(
       onSelected: (value) {
@@ -358,6 +369,12 @@ class EvaluationList extends StatelessWidget {
             break;
           case 'restore':
             onRestore?.call(evaluation);
+            break;
+          case 'approve':
+            onApprove?.call(evaluation);
+            break;
+          case 'unapprove':
+            onUnapprove?.call(evaluation);
             break;
         }
       },
@@ -394,8 +411,8 @@ class EvaluationList extends StatelessWidget {
               ],
             ),
           ),
-        // Edit option (not for deleted items)
-        if (!isDeleted)
+        // Edit option (not for deleted or approved items)
+        if (!isDeleted && !isApproved)
           PopupMenuItem<String>(
             value: 'edit',
             child: Row(
@@ -416,6 +433,7 @@ class EvaluationList extends StatelessWidget {
               ],
             ),
           ),
+        // Export option (always available)
         PopupMenuItem<String>(
           value: 'export',
           child: Row(
@@ -436,32 +454,60 @@ class EvaluationList extends StatelessWidget {
             ],
           ),
         ),
-        PopupMenuItem<String>(
-          value: 'delete',
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isDeleted ? Icons.delete_forever_rounded : Icons.delete_rounded,
-                size: 18,
-                color: AppColors.error,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                isDeleted ? 'حذف نهائي' : 'حذف',
-                style: AppTypography.bodyMedium.copyWith(
+        // Approve/Unapprove option (not for deleted items)
+        if (!isDeleted)
+          PopupMenuItem<String>(
+            value: isApproved ? 'unapprove' : 'approve',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isApproved 
+                      ? Icons.lock_open_rounded 
+                      : Icons.verified_rounded,
+                  size: 18,
+                  color: isApproved ? AppColors.warning : Colors.black,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  isApproved 
+                      ? AppConstants.menuUnapprove 
+                      : AppConstants.menuApprove,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: isApproved ? AppColors.warning : Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        // Delete option (not for approved items)
+        if (!isApproved)
+          PopupMenuItem<String>(
+            value: 'delete',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isDeleted ? Icons.delete_forever_rounded : Icons.delete_rounded,
+                  size: 18,
                   color: AppColors.error,
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Text(
+                  isDeleted ? 'حذف نهائي' : 'حذف',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.error,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }
 
   /// Builds a colored badge with the row number inside
-  /// Colors: Green = completed, Yellow/Amber = draft, Red = deleted
+  /// Colors: Green = completed, Yellow/Amber = draft, Red = deleted, Black = approved
   Widget _buildStatusBadge(int rowNumber, String status) {
     Color backgroundColor;
     Color textColor;
@@ -469,6 +515,10 @@ class EvaluationList extends StatelessWidget {
     switch (status.toLowerCase()) {
       case 'completed':
         backgroundColor = const Color(0xFF22C55E); // Modern green
+        textColor = Colors.white;
+        break;
+      case 'approved':
+        backgroundColor = Colors.black; // Black for approved
         textColor = Colors.white;
         break;
       case 'draft':

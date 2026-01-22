@@ -45,24 +45,28 @@ class FormStepArguments {
   final int currentStep;
   final bool canGoBack;
   final bool canGoForward;
+  final bool isViewOnly;
 
   const FormStepArguments({
     this.evaluationId,
     required this.currentStep,
     this.canGoBack = true,
     this.canGoForward = true,
+    this.isViewOnly = false,
   });
 
   /// Create arguments for specific step
   factory FormStepArguments.forStep({
     required int step,
     String? evaluationId,
+    bool isViewOnly = false,
   }) {
     return FormStepArguments(
       evaluationId: evaluationId,
       currentStep: step,
       canGoBack: step > 1,
       canGoForward: step < 9,
+      isViewOnly: isViewOnly,
     );
   }
 
@@ -72,12 +76,14 @@ class FormStepArguments {
     int? currentStep,
     bool? canGoBack,
     bool? canGoForward,
+    bool? isViewOnly,
   }) {
     return FormStepArguments(
       evaluationId: evaluationId ?? this.evaluationId,
       currentStep: currentStep ?? this.currentStep,
       canGoBack: canGoBack ?? this.canGoBack,
       canGoForward: canGoForward ?? this.canGoForward,
+      isViewOnly: isViewOnly ?? this.isViewOnly,
     );
   }
 
@@ -89,6 +95,7 @@ class FormStepArguments {
       currentStep: nextStepNumber,
       canGoBack: true,
       canGoForward: nextStepNumber < 9,
+      isViewOnly: isViewOnly,
     );
   }
 
@@ -100,6 +107,7 @@ class FormStepArguments {
       currentStep: prevStepNumber,
       canGoBack: prevStepNumber > 1,
       canGoForward: true,
+      isViewOnly: isViewOnly,
     );
   }
 }

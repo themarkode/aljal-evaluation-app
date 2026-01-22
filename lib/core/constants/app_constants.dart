@@ -37,6 +37,36 @@ class AppConstants {
   static const String statusDraft = 'draft';
   static const String statusCompleted = 'completed';
   static const String statusArchived = 'archived';
+  static const String statusApproved = 'approved';
+  static const String statusDeleted = 'deleted';
+
+  // ============================================================
+  // APPROVAL FEATURE
+  // ============================================================
+
+  /// Password required for approval action
+  static const String approvalPassword = 'تم الاعتماد.';
+  
+  /// Password required for unapproval action
+  static const String unapprovalPassword = 'الغاء الاعتماد.';
+  
+  /// Status labels (Arabic)
+  static const String labelDraft = 'مسودة';
+  static const String labelCompleted = 'مكتمل';
+  static const String labelApproved = 'معتمد';
+  static const String labelDeleted = 'محذوف';
+  
+  /// Menu labels (Arabic)
+  static const String menuApprove = 'اعتماد';
+  static const String menuUnapprove = 'إلغاء الاعتماد';
+  
+  /// Dialog messages (Arabic)
+  static const String approveDialogTitle = 'اعتماد التقرير';
+  static const String approveDialogMessage = 'أدخل كلمة المرور لاعتماد هذا التقرير';
+  static const String unapproveDialogTitle = 'إلغاء اعتماد التقرير';
+  static const String unapproveDialogMessage = 'أدخل كلمة المرور لإلغاء اعتماد هذا التقرير';
+  static const String passwordHint = 'كلمة المرور';
+  static const String wrongPassword = 'كلمة المرور غير صحيحة';
 
   // ============================================================
   // PAGINATION

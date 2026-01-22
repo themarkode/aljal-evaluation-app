@@ -14,10 +14,12 @@ import 'package:aljal_evaluation/presentation/widgets/templates/step_screen_temp
 /// Step 1: General Information Screen
 class Step1GeneralInfoScreen extends ConsumerStatefulWidget {
   final String? evaluationId;
+  final bool isViewOnly;
 
   const Step1GeneralInfoScreen({
     super.key,
     this.evaluationId,
+    this.isViewOnly = false,
   });
 
   @override
@@ -152,6 +154,17 @@ class _Step1GeneralInfoScreenState extends ConsumerState<Step1GeneralInfoScreen>
   }
 
   void _saveAndContinue() {
+    // In view-only mode, just navigate without validation
+    if (widget.isViewOnly) {
+      StepNavigation.goToNextStep(
+        context,
+        currentStep: 1,
+        evaluationId: widget.evaluationId,
+        isViewOnly: true,
+      );
+      return;
+    }
+
     if (_formKey.currentState?.validate() ?? false) {
       // Save to memory state only (no Firebase save)
       saveCurrentDataToState();
@@ -207,6 +220,7 @@ class _Step1GeneralInfoScreenState extends ConsumerState<Step1GeneralInfoScreen>
       onSaveToMemory: saveCurrentDataToState,
       validateBeforeNavigation: _validateForm,
       onValidationFailed: _onValidationFailed,
+      isViewOnly: widget.isViewOnly,
       mobileContent: _buildMobileLayout(),
       tabletContent: _buildTabletLayout(),
       desktopContent: _buildDesktopLayout(),
@@ -288,6 +302,7 @@ class _Step1GeneralInfoScreenState extends ConsumerState<Step1GeneralInfoScreen>
       label: 'اسم الجهة الطالبة للتقييم',
       hint: 'اسم الجهة الطالبة للتقييم',
       showValidationDot: true,
+      enabled: !widget.isViewOnly,
     );
   }
 
@@ -297,6 +312,7 @@ class _Step1GeneralInfoScreenState extends ConsumerState<Step1GeneralInfoScreen>
       label: 'العميل',
       hint: 'العميل',
       showValidationDot: true,
+      enabled: !widget.isViewOnly,
     );
   }
 
@@ -306,6 +322,7 @@ class _Step1GeneralInfoScreenState extends ConsumerState<Step1GeneralInfoScreen>
       label: 'المالك',
       hint: 'المالك',
       showValidationDot: true,
+      enabled: !widget.isViewOnly,
     );
   }
 
@@ -314,6 +331,7 @@ class _Step1GeneralInfoScreenState extends ConsumerState<Step1GeneralInfoScreen>
       label: 'تاريخ طلب التقييم',
       value: _requestDate,
       showValidationDot: true,
+      enabled: !widget.isViewOnly,
       onChanged: (date) {
         setState(() {
           _requestDate = date;
@@ -327,6 +345,7 @@ class _Step1GeneralInfoScreenState extends ConsumerState<Step1GeneralInfoScreen>
       label: 'تاريخ إصدار التقييم',
       value: _issueDate,
       showValidationDot: true,
+      enabled: !widget.isViewOnly,
       onChanged: (date) {
         setState(() {
           _issueDate = date;
@@ -340,6 +359,7 @@ class _Step1GeneralInfoScreenState extends ConsumerState<Step1GeneralInfoScreen>
       label: 'تاريخ الكشف',
       value: _inspectionDate,
       showValidationDot: true,
+      enabled: !widget.isViewOnly,
       onChanged: (date) {
         setState(() {
           _inspectionDate = date;
@@ -358,6 +378,7 @@ class _Step1GeneralInfoScreenState extends ConsumerState<Step1GeneralInfoScreen>
       validator: PhoneValidator.validate,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       errorBlinkTrigger: errorBlinkTrigger, // From StepScreenMixin
+      enabled: !widget.isViewOnly,
     );
   }
 
@@ -371,6 +392,7 @@ class _Step1GeneralInfoScreenState extends ConsumerState<Step1GeneralInfoScreen>
       validator: PhoneValidator.validate,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       errorBlinkTrigger: errorBlinkTrigger, // From StepScreenMixin
+      enabled: !widget.isViewOnly,
     );
   }
 
@@ -384,6 +406,7 @@ class _Step1GeneralInfoScreenState extends ConsumerState<Step1GeneralInfoScreen>
       validator: PhoneValidator.validate,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       errorBlinkTrigger: errorBlinkTrigger, // From StepScreenMixin
+      enabled: !widget.isViewOnly,
     );
   }
 }

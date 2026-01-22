@@ -393,6 +393,10 @@ class EvaluationListNotifier extends _$EvaluationListNotifier {
         return EvaluationFilter.draft;
       case 'completed':
         return EvaluationFilter.completed;
+      case 'approved':
+        return EvaluationFilter.approved;
+      case 'deleted':
+        return EvaluationFilter.deleted;
       default:
         return EvaluationFilter.all;
     }
@@ -404,8 +408,87 @@ class EvaluationListNotifier extends _$EvaluationListNotifier {
         return 'draft';
       case EvaluationFilter.completed:
         return 'completed';
+      case EvaluationFilter.approved:
+        return 'approved';
+      case EvaluationFilter.deleted:
+        return 'deleted';
       case EvaluationFilter.all:
         return '';
+    }
+  }
+  
+  /// Approve evaluation - marks it as 'approved' status
+  /// Approved evaluations cannot be edited or deleted until unapproved
+  Future<void> approveEvaluation(String evaluationId) async {
+    try {
+      await _evaluationService.approveEvaluation(evaluationId);
+      
+      // Update local state
+      final updatedList = state.evaluations.map((e) {
+        if (e.evaluationId == evaluationId) {
+          return EvaluationModel(
+            evaluationId: e.evaluationId,
+            status: 'approved',
+            previousStatus: e.status ?? 'completed',
+            createdAt: e.createdAt,
+            updatedAt: DateTime.now(),
+            generalInfo: e.generalInfo,
+            generalPropertyInfo: e.generalPropertyInfo,
+            propertyDescription: e.propertyDescription,
+            floorsCount: e.floorsCount,
+            floors: e.floors,
+            areaDetails: e.areaDetails,
+            incomeNotes: e.incomeNotes,
+            sitePlans: e.sitePlans,
+            propertyImages: e.propertyImages,
+            additionalData: e.additionalData,
+            buildingLandCost: e.buildingLandCost,
+            economicIncome: e.economicIncome,
+          );
+        }
+        return e;
+      }).toList();
+      
+      state = state.copyWith(evaluations: updatedList);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+  
+  /// Unapprove evaluation - restores it to 'completed' status
+  Future<void> unapproveEvaluation(String evaluationId) async {
+    try {
+      await _evaluationService.unapproveEvaluation(evaluationId);
+      
+      // Update local state
+      final updatedList = state.evaluations.map((e) {
+        if (e.evaluationId == evaluationId) {
+          return EvaluationModel(
+            evaluationId: e.evaluationId,
+            status: 'completed',
+            previousStatus: null,
+            createdAt: e.createdAt,
+            updatedAt: DateTime.now(),
+            generalInfo: e.generalInfo,
+            generalPropertyInfo: e.generalPropertyInfo,
+            propertyDescription: e.propertyDescription,
+            floorsCount: e.floorsCount,
+            floors: e.floors,
+            areaDetails: e.areaDetails,
+            incomeNotes: e.incomeNotes,
+            sitePlans: e.sitePlans,
+            propertyImages: e.propertyImages,
+            additionalData: e.additionalData,
+            buildingLandCost: e.buildingLandCost,
+            economicIncome: e.economicIncome,
+          );
+        }
+        return e;
+      }).toList();
+      
+      state = state.copyWith(evaluations: updatedList);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
     }
   }
 }
@@ -456,6 +539,8 @@ enum EvaluationFilter {
   all,
   draft,
   completed,
+  approved,
+  deleted,
 }
 
 /// Provider to persist view preference (Grid vs List)
